@@ -1,0 +1,3 @@
+# GO dynamic struct
+
+In progress...
