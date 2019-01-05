@@ -12,28 +12,37 @@ import (
 )
 
 type (
-	StructTestSuite struct {
+	BuilderTestSuite struct {
 		suite.Suite
 
 		builder Builder
 	}
 )
 
-func TestStructTestSuite(t *testing.T) {
-	suite.Run(t, &StructTestSuite{})
+func TestBuilderTestSuite(t *testing.T) {
+	suite.Run(t, &BuilderTestSuite{})
 }
 
-func (t *StructTestSuite) SetupTest() {
+func (t *BuilderTestSuite) SetupTest() {
+	integer := 0
+	str := ""
+	float := 0.0
+	boolean := false
+
 	t.builder = NewBuilder().
-		AddField("Integer", 0, "").
-		AddField("Text", "", "").
-		AddField("Float", 0.0, "").
-		AddField("Boolean", false, "").
+		AddField("Integer", integer, "").
+		AddField("Text", str, "").
+		AddField("Float", float, "").
+		AddField("Boolean", boolean, "").
+		AddField("NilInteger", &integer, "").
+		AddField("NilText", &str, "").
+		AddField("NilFloat", &float, "").
+		AddField("NilBoolean", &boolean, "").
 		AddField("Slice", []int{}, "").
 		AddField("Anonymous", "", "")
 }
 
-func (t *StructTestSuite) TestJson() {
+func (t *BuilderTestSuite) TestJson() {
 	t.builder.GetField("Integer").SetTag(`json:"int"`)
 	t.builder.GetField("Text").SetTag(`json:"someText"`)
 	t.builder.GetField("Float").SetTag(`json:"double"`)
@@ -47,22 +56,34 @@ func (t *StructTestSuite) TestJson() {
 	"double": 123.45,
 	"Boolean": true,
 	"Slice": [1, 2, 3],
-	"Anonymous": "avoid to read"
+	"Anonymous": "avoid to read",
+	"NilFloat": 567
 }
 `)
 
 	err := json.Unmarshal(data, &value)
 	t.NoError(err)
 
-	vReader := NewReader(value)
-	t.Equal(123, vReader.Int("Integer"))
-	t.Equal("example", vReader.String("Text"))
-	t.Equal(123.45, vReader.Float64("Float"))
-	t.Equal(true, vReader.Bool("Boolean"))
-	t.Equal("", vReader.String("Anonymous"))
+	var result map[string]interface{}
+	err = NewReader(value).MapTo(&result)
+	t.NoError(err)
+
+	float := 567.0
+	t.Equal(map[string]interface{}{
+		"int": 123.0,
+		"someText": "example",
+		"double": 123.45,
+		"Boolean": true,
+		"Slice": []interface{}{1.0, 2.0, 3.0},
+		"NilInteger": nil,
+		"NilFloat": float,
+		"NilBoolean": nil,
+		"NilText": nil,
+	}, result)
+
 }
 
-func (t *StructTestSuite) TestFormAndConform() {
+func (t *BuilderTestSuite) TestFormAndConform() {
 	t.builder.GetField("Integer").SetTag(`form:"int"`)
 	t.builder.GetField("Text").SetTag(`form:"someText" conform:"trim"`)
 	t.builder.GetField("Float").SetTag(`form:"double"`)
@@ -76,6 +97,7 @@ func (t *StructTestSuite) TestFormAndConform() {
 		"Boolean":   []string{"on"},
 		"Slice":     []string{"1", "2", "3"},
 		"Anonymous": []string{"avoid to read"},
+		"NilFloat":  []string{"567"},
 	}
 
 	decoder := form.NewDecoder()
@@ -85,15 +107,26 @@ func (t *StructTestSuite) TestFormAndConform() {
 	err = conform.Strings(value)
 	t.NoError(err)
 
-	vReader := NewReader(value)
-	t.Equal(123, vReader.Int("Integer"))
-	t.Equal("example", vReader.String("Text"))
-	t.Equal(123.45, vReader.Float64("Float"))
-	t.Equal(true, vReader.Bool("Boolean"))
-	t.Equal("", vReader.String("Anonymous"))
+	var result map[string]interface{}
+	err = NewReader(value).MapTo(&result)
+	t.NoError(err)
+
+	float := 567.0
+	t.Equal(map[string]interface{}{
+		"Integer": 123.0,
+		"Text": "example",
+		"Float": 123.45,
+		"Boolean": true,
+		"Anonymous": "",
+		"Slice": []interface{}{1.0, 2.0, 3.0},
+		"NilInteger": nil,
+		"NilFloat": float,
+		"NilBoolean": nil,
+		"NilText": nil,
+	}, result)
 }
 
-func (t *StructTestSuite) TestValidate() {
+func (t *BuilderTestSuite) TestValidate() {
 	t.builder.GetField("Integer").SetTag(`validate:"gt=0"`)
 	t.builder.GetField("Text").SetTag(`validate:"required"`)
 	value := t.builder.Build()
