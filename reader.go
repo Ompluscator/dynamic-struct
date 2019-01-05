@@ -1,4 +1,4 @@
-package dynamic_struct
+package dynamicstruct
 
 import (
 	"encoding/json"

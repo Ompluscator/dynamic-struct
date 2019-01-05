@@ -31,7 +31,7 @@ import (
 )
 
 func main() {
-	instance := dynamic_struct.NewBuilder().
+	instance := dynamicstruct.NewBuilder().
 		AddField("Integer", 0, `json:"int"`).
 		AddField("Text", "", `json:"someText"`).
 		AddField("Float", 0.0, `json:"double"`).
@@ -85,7 +85,7 @@ type Data struct {
 }
 
 func main() {
-	instance := dynamic_struct.ExtendStruct(Data{}).
+	instance := dynamicstruct.ExtendStruct(Data{}).
 		AddField("Text", "", `json:"someText"`).
 		AddField("Float", 0.0, `json:"double"`).
 		AddField("Boolean", false, "").
