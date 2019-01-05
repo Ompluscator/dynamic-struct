@@ -2,13 +2,13 @@ package dynamic_struct
 
 import (
 	"encoding/json"
-	"gopkg.in/go-playground/validator.v9"
 	"net/url"
 	"reflect"
 	"testing"
 
 	"github.com/go-playground/form"
 	"github.com/leebenson/conform"
+	"gopkg.in/go-playground/validator.v9"
 )
 
 func TestNewBuilder(t *testing.T) {
