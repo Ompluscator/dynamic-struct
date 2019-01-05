@@ -2,52 +2,182 @@ package dynamic_struct
 
 import (
 	"encoding/json"
-	"github.com/go-playground/form"
-	"github.com/leebenson/conform"
 	"gopkg.in/go-playground/validator.v9"
 	"net/url"
+	"reflect"
 	"testing"
 
-	"github.com/stretchr/testify/suite"
+	"github.com/go-playground/form"
+	"github.com/leebenson/conform"
 )
 
-type (
-	BuilderTestSuite struct {
-		suite.Suite
+func TestNewBuilder(t *testing.T) {
+	value := NewBuilder()
 
-		builder Builder
+	builder, ok := value.(*builderImpl)
+	if !ok {
+		t.Errorf(`TestNewBuilder - expected instance of *builder got %#v`, value)
 	}
-)
 
-func TestBuilderTestSuite(t *testing.T) {
-	suite.Run(t, &BuilderTestSuite{})
+	if builder.fields == nil {
+		t.Error(`TestNewBuilder - expected instance of *map[string]*fieldConfig got nil`)
+	}
+
+	if len(builder.fields) > 0 {
+		t.Errorf(`TestNewBuilder - expected length of fields map to be 0 got %d`, len(builder.fields))
+	}
 }
 
-func (t *BuilderTestSuite) SetupTest() {
-	integer := 0
-	str := ""
-	float := 0.0
-	boolean := false
+func TestExtendStruct(t *testing.T) {
+	value := ExtendStruct(struct {
+		Field int `key:"value"`
+	}{})
 
-	t.builder = NewBuilder().
-		AddField("Integer", integer, "").
-		AddField("Text", str, "").
-		AddField("Float", float, "").
-		AddField("Boolean", boolean, "").
-		AddField("NilInteger", &integer, "").
-		AddField("NilText", &str, "").
-		AddField("NilFloat", &float, "").
-		AddField("NilBoolean", &boolean, "").
-		AddField("Slice", []int{}, "").
-		AddField("Anonymous", "", "")
+	builder, ok := value.(*builderImpl)
+	if !ok {
+		t.Errorf(`TestExtendStruct - expected instance of *builder got %#v`, value)
+	}
+
+	if builder.fields == nil {
+		t.Error(`TestExtendStruct - expected instance of *map[string]*fieldConfig got nil`)
+	}
+
+	if len(builder.fields) != 1 {
+		t.Errorf(`TestExtendStruct - expected length of fields map to be 1 got %d`, len(builder.fields))
+	}
+
+	field, ok := builder.fields["Field"]
+	if !ok {
+		t.Error(`TestExtendStruct - expected to have field "Field"`)
+	}
+
+	expected := &fieldConfigImpl{
+		typ: 0,
+		tag: `key:"value"`,
+	}
+
+	if !reflect.DeepEqual(field, expected) {
+		t.Errorf(`TestExtendStruct - expected field to be %#v got %#v`, expected, field)
+	}
 }
 
-func (t *BuilderTestSuite) TestJson() {
-	t.builder.GetField("Integer").SetTag(`json:"int"`)
-	t.builder.GetField("Text").SetTag(`json:"someText"`)
-	t.builder.GetField("Float").SetTag(`json:"double"`)
-	t.builder.GetField("Anonymous").SetTag(`json:"-"`)
-	value := t.builder.Build()
+func TestBuilderImpl_AddField(t *testing.T) {
+	builder := &builderImpl{
+		fields: map[string]*fieldConfigImpl{},
+	}
+
+	builder.AddField("Field", 1, `key:"value"`)
+
+	field, ok := builder.fields["Field"]
+	if !ok {
+		t.Error(`TestBuilder_AddField - expected to have field "Field"`)
+	}
+
+	expected := &fieldConfigImpl{
+		typ: 1,
+		tag: `key:"value"`,
+	}
+
+	if !reflect.DeepEqual(field, expected) {
+		t.Errorf(`TestExtendStruct - expected field to be %#v got %#v`, expected, field)
+	}
+}
+
+func TestBuilderImpl_RemoveField(t *testing.T) {
+	builder := &builderImpl{
+		fields: map[string]*fieldConfigImpl{
+			"Field": {
+				tag: `key:"value"`,
+				typ: 1,
+			},
+		},
+	}
+
+	builder.RemoveField("Field")
+
+	if _, ok := builder.fields["Field"]; ok {
+		t.Error(`TestBuilder_RemoveField - expected not to have field "Field"`)
+	}
+}
+
+func TestBuilderImpl_HasField(t *testing.T) {
+	builder := &builderImpl{
+		fields: map[string]*fieldConfigImpl{},
+	}
+
+	if builder.HasField("Field") {
+		t.Error(`TestBuilder_HasField - expected not to have field "Field"`)
+	}
+
+	builder = &builderImpl{
+		fields: map[string]*fieldConfigImpl{
+			"Field": {
+				tag: `key:"value"`,
+				typ: 1,
+			},
+		},
+	}
+
+	if !builder.HasField("Field") {
+		t.Error(`TestBuilder_HasField - expected to have field "Field"`)
+	}
+}
+
+func TestBuilderImpl_GetField(t *testing.T) {
+	builder := &builderImpl{
+		fields: map[string]*fieldConfigImpl{
+			"Field": {
+				tag: `key:"value"`,
+				typ: 1,
+			},
+		},
+	}
+
+	value := builder.GetField("Field")
+
+	field, ok := value.(*fieldConfigImpl)
+	if !ok {
+		t.Errorf(`TestBuilder_GetField - expected instance of *fieldConfig got %#v`, value)
+	}
+
+	expected := &fieldConfigImpl{
+		typ: 1,
+		tag: `key:"value"`,
+	}
+
+	if !reflect.DeepEqual(field, expected) {
+		t.Errorf(`TestExtendStruct - expected field to be %#v got %#v`, expected, field)
+	}
+}
+
+func TestFieldConfigImpl_SetTag(t *testing.T) {
+	field := &fieldConfigImpl{}
+
+	field.SetTag(`key:"value"`)
+
+	if field.tag != `key:"value"` {
+		t.Errorf(`TestFieldConfigImpl_SetTag - expected tag to be "%s" got "%s"`, `key:"value"`, field.tag)
+	}
+}
+
+func TestFieldConfigImpl_SetType(t *testing.T) {
+	field := &fieldConfigImpl{}
+
+	field.SetType(1000)
+
+	if field.typ != 1000 {
+		t.Errorf(`TestFieldConfigImpl_SetType - expected type to be as for %#v got %#v`, 1000, field.typ)
+	}
+}
+
+func TestBuilderImpl_Build_JSON(t *testing.T) {
+	builder := getBuilder()
+
+	builder.GetField("Integer").SetTag(`json:"int"`)
+	builder.GetField("Text").SetTag(`json:"someText"`)
+	builder.GetField("Float").SetTag(`json:"double"`)
+	builder.GetField("Anonymous").SetTag(`json:"-"`)
+	value := builder.Build()
 
 	data := []byte(`
 {
@@ -62,33 +192,61 @@ func (t *BuilderTestSuite) TestJson() {
 `)
 
 	err := json.Unmarshal(data, &value)
-	t.NoError(err)
+	if err != nil {
+		t.Errorf(`TestBuilderImpl_Build_JSON - expected not to have error got %#v`, err)
+	}
 
-	var result map[string]interface{}
-	err = NewReader(value).MapTo(&result)
-	t.NoError(err)
+	valueOf := reflect.Indirect(reflect.ValueOf(value))
 
-	float := 567.0
-	t.Equal(map[string]interface{}{
-		"int": 123.0,
-		"someText": "example",
-		"double": 123.45,
-		"Boolean": true,
-		"Slice": []interface{}{1.0, 2.0, 3.0},
-		"NilInteger": nil,
-		"NilFloat": float,
-		"NilBoolean": nil,
-		"NilText": nil,
-	}, result)
+	if value := valueOf.FieldByName("Integer").Interface(); value != 123 {
+		t.Errorf(`TestBuilderImpl_Build_JSON - expected field "Integer" to be %#v got %#v`, 123, value)
+	}
 
+	if value := valueOf.FieldByName("Text").Interface(); value != "example" {
+		t.Errorf(`TestBuilderImpl_Build_JSON - expected field "Text" to be %#v got %#v`, "example", value)
+	}
+
+	if value := valueOf.FieldByName("Float").Interface(); value != 123.45 {
+		t.Errorf(`TestBuilderImpl_Build_JSON - expected field "Float" to be %#v got %#v`, 123.45, value)
+	}
+
+	if value := valueOf.FieldByName("Boolean").Interface(); value != true {
+		t.Errorf(`TestBuilderImpl_Build_JSON - expected field "Boolean" to be %#v got %#v`, true, value)
+	}
+
+	if value := valueOf.FieldByName("Slice").Interface(); !reflect.DeepEqual(value, []int{1, 2, 3}) {
+		t.Errorf(`TestBuilderImpl_Build_JSON - expected field "Slice" to be %#v got %#v`, []int{1, 2, 3}, value)
+	}
+
+	if value := valueOf.FieldByName("NilInteger").Interface(); value != (*int)(nil) {
+		t.Errorf(`TestBuilderImpl_Build_JSON - expected field "NilInteger" to be nil got %#v`, value)
+	}
+
+	if value := valueOf.FieldByName("NilText").Interface(); value != (*string)(nil) {
+		t.Errorf(`TestBuilderImpl_Build_JSON - expected field "NilText" to be nil got %#v`, value)
+	}
+
+	if value := valueOf.FieldByName("NilBoolean").Interface(); value != (*bool)(nil) {
+		t.Errorf(`TestBuilderImpl_Build_JSON - expected field "NilBoolean" to be nil got %#v`, value)
+	}
+
+	if value, ok := valueOf.FieldByName("NilFloat").Interface().(*float64); !ok || *value != 567.0 {
+		t.Errorf(`TestBuilderImpl_Build_JSON - expected field "NilFloat" to be %#v got %#v`, 567, value)
+	}
+
+	if value := valueOf.FieldByName("Anonymous").Interface(); value != "" {
+		t.Errorf(`TestBuilderImpl_Build_JSON - expected field "Anonymous" to be %#v got %#v`, "", value)
+	}
 }
 
-func (t *BuilderTestSuite) TestFormAndConform() {
-	t.builder.GetField("Integer").SetTag(`form:"int"`)
-	t.builder.GetField("Text").SetTag(`form:"someText" conform:"trim"`)
-	t.builder.GetField("Float").SetTag(`form:"double"`)
-	t.builder.GetField("Anonymous").SetTag(`form:"-"`)
-	value := t.builder.Build()
+func TestBuilderImpl_Build_Form(t *testing.T) {
+	builder := getBuilder()
+
+	builder.GetField("Integer").SetTag(`form:"int"`)
+	builder.GetField("Text").SetTag(`form:"someText" conform:"trim"`)
+	builder.GetField("Float").SetTag(`form:"double"`)
+	builder.GetField("Anonymous").SetTag(`form:"-"`)
+	value := builder.Build()
 
 	data := url.Values{
 		"int":       []string{"123"},
@@ -102,39 +260,131 @@ func (t *BuilderTestSuite) TestFormAndConform() {
 
 	decoder := form.NewDecoder()
 	err := decoder.Decode(&value, data)
-	t.NoError(err)
+	if err != nil {
+		t.Errorf(`TestBuilderImpl_Build_Form - expected not to have error got %#v`, err)
+	}
 
 	err = conform.Strings(value)
-	t.NoError(err)
+	if err != nil {
+		t.Errorf(`TestBuilderImpl_Build_Form - expected not to have error got %#v`, err)
+	}
 
-	var result map[string]interface{}
-	err = NewReader(value).MapTo(&result)
-	t.NoError(err)
+	valueOf := reflect.Indirect(reflect.ValueOf(value))
 
-	float := 567.0
-	t.Equal(map[string]interface{}{
-		"Integer": 123.0,
-		"Text": "example",
-		"Float": 123.45,
-		"Boolean": true,
-		"Anonymous": "",
-		"Slice": []interface{}{1.0, 2.0, 3.0},
-		"NilInteger": nil,
-		"NilFloat": float,
-		"NilBoolean": nil,
-		"NilText": nil,
-	}, result)
+	if value := valueOf.FieldByName("Integer").Interface(); value != 123 {
+		t.Errorf(`TestBuilderImpl_Build_Form - expected field "Integer" to be %#v got %#v`, 123, value)
+	}
+
+	if value := valueOf.FieldByName("Text").Interface(); value != "example" {
+		t.Errorf(`TestBuilderImpl_Build_Form - expected field "Text" to be %#v got %#v`, "example", value)
+	}
+
+	if value := valueOf.FieldByName("Float").Interface(); value != 123.45 {
+		t.Errorf(`TestBuilderImpl_Build_Form - expected field "Float" to be %#v got %#v`, 123.45, value)
+	}
+
+	if value := valueOf.FieldByName("Boolean").Interface(); value != true {
+		t.Errorf(`TestBuilderImpl_Build_Form - expected field "Boolean" to be %#v got %#v`, true, value)
+	}
+
+	if value := valueOf.FieldByName("Slice").Interface(); !reflect.DeepEqual(value, []int{1, 2, 3}) {
+		t.Errorf(`TestBuilderImpl_Build_Form - expected field "Slice" to be %#v got %#v`, []int{1, 2, 3}, value)
+	}
+
+	if value := valueOf.FieldByName("NilInteger").Interface(); value != (*int)(nil) {
+		t.Errorf(`TestBuilderImpl_Build_Form - expected field "NilInteger" to be nil got %#v`, value)
+	}
+
+	if value := valueOf.FieldByName("NilText").Interface(); value != (*string)(nil) {
+		t.Errorf(`TestBuilderImpl_Build_Form - expected field "NilText" to be nil got %#v`, value)
+	}
+
+	if value := valueOf.FieldByName("NilBoolean").Interface(); value != (*bool)(nil) {
+		t.Errorf(`TestBuilderImpl_Build_Form - expected field "NilBoolean" to be nil got %#v`, value)
+	}
+
+	if value, ok := valueOf.FieldByName("NilFloat").Interface().(*float64); !ok || *value != 567.0 {
+		t.Errorf(`TestBuilderImpl_Build_Form - expected field "NilFloat" to be %#v got %#v`, 567, value)
+	}
+
+	if value := valueOf.FieldByName("Anonymous").Interface(); value != "" {
+		t.Errorf(`TestBuilderImpl_Build_Form - expected field "Anonymous" to be %#v got %#v`, "", value)
+	}
 }
 
-func (t *BuilderTestSuite) TestValidate() {
-	t.builder.GetField("Integer").SetTag(`validate:"gt=0"`)
-	t.builder.GetField("Text").SetTag(`validate:"required"`)
-	value := t.builder.Build()
+func TestBuilderImpl_Build_Validate(t *testing.T) {
+	builder := getBuilder()
+
+	builder.GetField("Integer").SetTag(`validate:"gt=0"`)
+	builder.GetField("Float").SetTag(`validate:"gte=0"`)
+	builder.GetField("Text").SetTag(`validate:"required"`)
+	value := builder.Build()
 
 	err := validator.New().Struct(value)
-	t.Error(err)
+	if err == nil {
+		t.Errorf(`TestBuilderImpl_Build_Validate - expected to have error got %#v`, err)
+	}
 
 	validationErrors, ok := err.(validator.ValidationErrors)
-	t.True(ok)
-	t.Len(validationErrors, 2)
+	if !ok {
+		t.Errorf(`TestBuilderImpl_Build_Validate - expected instance of *validator.ValidationErrors got %#v`, value)
+	}
+
+	for _, fieldError := range validationErrors {
+		fieldError.Tag()
+	}
+
+	fieldErrors := []validator.FieldError(validationErrors)
+	if len(fieldErrors) != 2 {
+		t.Errorf(`TestBuilderImpl_Build_Validate - expected field errors to have length %#v got %#v`, 2, len(fieldErrors))
+	}
+
+	checkedInteger := false
+	checkedText := false
+	for _, fieldError := range fieldErrors {
+		if fieldError.Field() == "Integer" {
+			checkedInteger = true
+
+			if fieldError.Tag() != "gt" {
+				t.Errorf(`TestBuilderImpl_Build_Validate - expected tag of field error to be %#v got %#v`, "gt", fieldError.Tag())
+			}
+
+			if fieldError.Param() != "0" {
+				t.Errorf(`TestBuilderImpl_Build_Validate - expected param of field error to be %#v got %#v`, "0", fieldError.Param())
+			}
+		} else if fieldError.Field() == "Text" {
+			checkedText = true
+
+			if fieldError.Tag() != "required" {
+				t.Errorf(`TestBuilderImpl_Build_Validate - expected tag of field error to be %#v got %#v`, "required", fieldError.Tag())
+			}
+		}
+	}
+
+	if !checkedInteger {
+		t.Error(`TestBuilderImpl_Build_Validate - expected to have field errors for field "Integer"`)
+	}
+
+	if !checkedText {
+		t.Error(`TestBuilderImpl_Build_Validate - expected to have field errors for field "Text"`)
+	}
+}
+
+func getBuilder() Builder {
+	integer := 0
+	str := ""
+	float := 0.0
+	boolean := false
+
+	return NewBuilder().
+		AddField("Integer", integer, "").
+		AddField("Text", str, "").
+		AddField("Float", float, "").
+		AddField("Boolean", boolean, "").
+		AddField("Slice", []int{}, "").
+		AddField("NilInteger", &integer, "").
+		AddField("NilText", &str, "").
+		AddField("NilFloat", &float, "").
+		AddField("NilBoolean", &boolean, "").
+		AddField("Anonymous", "", "")
 }

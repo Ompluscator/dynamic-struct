@@ -16,24 +16,44 @@ type (
 		SetTag(tag string) FieldConfig
 	}
 
-	builder struct {
-		fields map[string]*fieldConfig
+	builderImpl struct {
+		fields map[string]*fieldConfigImpl
 	}
 
-	fieldConfig struct {
+	fieldConfigImpl struct {
 		typ interface{}
 		tag string
 	}
 )
 
 func NewBuilder() Builder {
-	return &builder{
-		fields: map[string]*fieldConfig{},
+	return &builderImpl{
+		fields: map[string]*fieldConfigImpl{},
 	}
 }
 
-func (b *builder) AddField(name string, typ interface{}, tag string) Builder {
-	b.fields[name] = &fieldConfig{
+func ExtendStruct(value interface{}) Builder {
+	fields := map[string]*fieldConfigImpl{}
+
+	valueOf := reflect.Indirect(reflect.ValueOf(value))
+	typeOf := valueOf.Type()
+
+	for i := 0; i < valueOf.NumField(); i++ {
+		fval := valueOf.Field(i)
+		ftyp := typeOf.Field(i)
+		fields[ftyp.Name] = &fieldConfigImpl{
+			typ: fval.Interface(),
+			tag: string(ftyp.Tag),
+		}
+	}
+
+	return &builderImpl{
+		fields: fields,
+	}
+}
+
+func (b *builderImpl) AddField(name string, typ interface{}, tag string) Builder {
+	b.fields[name] = &fieldConfigImpl{
 		typ: typ,
 		tag: tag,
 	}
@@ -41,22 +61,25 @@ func (b *builder) AddField(name string, typ interface{}, tag string) Builder {
 	return b
 }
 
-func (b *builder) RemoveField(name string) Builder {
+func (b *builderImpl) RemoveField(name string) Builder {
 	delete(b.fields, name)
 
 	return b
 }
 
-func (b *builder) HasField(name string) bool {
+func (b *builderImpl) HasField(name string) bool {
 	_, ok := b.fields[name]
 	return ok
 }
 
-func (b *builder) GetField(name string) FieldConfig {
+func (b *builderImpl) GetField(name string) FieldConfig {
+	if !b.HasField(name) {
+		return nil
+	}
 	return b.fields[name]
 }
 
-func (b *builder) Build() interface{} {
+func (b *builderImpl) Build() interface{} {
 	var structFields []reflect.StructField
 
 	for name, field := range b.fields {
@@ -70,12 +93,12 @@ func (b *builder) Build() interface{} {
 	return reflect.New(reflect.StructOf(structFields)).Interface()
 }
 
-func (f *fieldConfig) SetType(typ interface{}) FieldConfig {
+func (f *fieldConfigImpl) SetType(typ interface{}) FieldConfig {
 	f.typ = typ
 	return f
 }
 
-func (f *fieldConfig) SetTag(tag string) FieldConfig {
+func (f *fieldConfigImpl) SetTag(tag string) FieldConfig {
 	f.tag = tag
 	return f
 }

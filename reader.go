@@ -57,13 +57,8 @@ type (
 func NewReader(value interface{}) Reader {
 	fields := map[string]fieldReader{}
 
-	valueOf := reflect.ValueOf(value)
-	typeOf := reflect.TypeOf(value)
-
-	if typeOf.Kind() == reflect.Ptr {
-		valueOf = valueOf.Elem()
-		typeOf = typeOf.Elem()
-	}
+	valueOf := reflect.Indirect(reflect.ValueOf(value))
+	typeOf := valueOf.Type()
 
 	for i := 0; i < valueOf.NumField(); i++ {
 		fval := valueOf.Field(i)
