@@ -117,6 +117,6 @@ func main() {
 
 	fmt.Println(string(data))
 	// Out:
-    // {"int":123,"someText":"example","double":123.45,"Boolean":true,"Slice":[1,2,3]}
+	// {"int":123,"someText":"example","double":123.45,"Boolean":true,"Slice":[1,2,3]}
 }
 ```
