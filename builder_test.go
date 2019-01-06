@@ -61,6 +61,58 @@ func TestExtendStruct(t *testing.T) {
 	}
 }
 
+func TestMergeStructs(t *testing.T) {
+	value := MergeStructs(
+		struct {
+			FieldOne int `keyOne:"valueOne"`
+		}{},
+		struct {
+			FieldTwo string `keyTwo:"valueTwo"`
+		}{},
+	)
+
+	builder, ok := value.(*builderImpl)
+	if !ok {
+		t.Errorf(`TestMergeStructs - expected instance of *builder got %#v`, value)
+	}
+
+	if builder.fields == nil {
+		t.Error(`TestMergeStructs - expected instance of *map[string]*fieldConfig got nil`)
+	}
+
+	if len(builder.fields) != 2 {
+		t.Errorf(`TestMergeStructs - expected length of fields map to be 1 got %d`, len(builder.fields))
+	}
+
+	fieldOne, ok := builder.fields["FieldOne"]
+	if !ok {
+		t.Error(`TestMergeStructs - expected to have field "FieldOne"`)
+	}
+
+	expectedOne := &fieldConfigImpl{
+		typ: 0,
+		tag: `keyOne:"valueOne"`,
+	}
+
+	if !reflect.DeepEqual(fieldOne, expectedOne) {
+		t.Errorf(`TestMergeStructs - expected field "FieldOne" to be %#v got %#v`, expectedOne, fieldOne)
+	}
+
+	fieldTwo, ok := builder.fields["FieldTwo"]
+	if !ok {
+		t.Error(`TestMergeStructs - expected to have field "FieldTwo"`)
+	}
+
+	expectedTwo := &fieldConfigImpl{
+		typ: "",
+		tag: `keyTwo:"valueTwo"`,
+	}
+
+	if !reflect.DeepEqual(fieldTwo, expectedTwo) {
+		t.Errorf(`TestMergeStructs - expected field "FieldTwo" to be %#v got %#v`, expectedTwo, fieldTwo)
+	}
+}
+
 func TestBuilderImpl_AddField(t *testing.T) {
 	builder := &builderImpl{
 		fields: map[string]*fieldConfigImpl{},

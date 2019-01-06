@@ -33,23 +33,24 @@ func NewBuilder() Builder {
 }
 
 func ExtendStruct(value interface{}) Builder {
-	fields := map[string]*fieldConfigImpl{}
+	return MergeStructs(value)
+}
 
-	valueOf := reflect.Indirect(reflect.ValueOf(value))
-	typeOf := valueOf.Type()
+func MergeStructs(values ...interface{}) Builder {
+	builder := NewBuilder()
 
-	for i := 0; i < valueOf.NumField(); i++ {
-		fval := valueOf.Field(i)
-		ftyp := typeOf.Field(i)
-		fields[ftyp.Name] = &fieldConfigImpl{
-			typ: fval.Interface(),
-			tag: string(ftyp.Tag),
+	for _, value := range values {
+		valueOf := reflect.Indirect(reflect.ValueOf(value))
+		typeOf := valueOf.Type()
+
+		for i := 0; i < valueOf.NumField(); i++ {
+			fval := valueOf.Field(i)
+			ftyp := typeOf.Field(i)
+			builder.AddField(ftyp.Name, fval.Interface(), string(ftyp.Tag))
 		}
 	}
 
-	return &builderImpl{
-		fields: fields,
-	}
+	return builder
 }
 
 func (b *builderImpl) AddField(name string, typ interface{}, tag string) Builder {
