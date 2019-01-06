@@ -3,7 +3,7 @@
 *Still in progress*
 
 Package dynamic struct provides possibility to dynamically, in runtime,
-extend and merging existing defined structs or to provide completely new struct.
+extend or merge existing defined structs or to provide completely new struct.
 
 Main features:
 * Building completely new struct in runtime
