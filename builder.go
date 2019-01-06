@@ -26,7 +26,7 @@ type (
 	}
 )
 
-func NewBuilder() Builder {
+func NewStruct() Builder {
 	return &builderImpl{
 		fields: map[string]*fieldConfigImpl{},
 	}
@@ -37,7 +37,7 @@ func ExtendStruct(value interface{}) Builder {
 }
 
 func MergeStructs(values ...interface{}) Builder {
-	builder := NewBuilder()
+	builder := NewStruct()
 
 	for _, value := range values {
 		valueOf := reflect.Indirect(reflect.ValueOf(value))

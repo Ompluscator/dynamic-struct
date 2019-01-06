@@ -12,7 +12,7 @@ import (
 )
 
 func TestNewBuilder(t *testing.T) {
-	value := NewBuilder()
+	value := NewStruct()
 
 	builder, ok := value.(*builderImpl)
 	if !ok {
@@ -428,7 +428,7 @@ func getBuilder() Builder {
 	float := 0.0
 	boolean := false
 
-	return NewBuilder().
+	return NewStruct().
 		AddField("Integer", integer, "").
 		AddField("Text", str, "").
 		AddField("Float", float, "").

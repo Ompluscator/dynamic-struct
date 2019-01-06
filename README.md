@@ -32,7 +32,7 @@ import (
 )
 
 func main() {
-	instance := dynamicstruct.NewBuilder().
+	instance := dynamicstruct.NewStruct().
 		AddField("Integer", 0, `json:"int"`).
 		AddField("Text", "", `json:"someText"`).
 		AddField("Float", 0.0, `json:"double"`).
