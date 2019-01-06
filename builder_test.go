@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/go-playground/form"
 	"github.com/leebenson/conform"
@@ -237,6 +238,7 @@ func TestBuilderImpl_Build_JSON(t *testing.T) {
 	"someText": "example",
 	"double": 123.45,
 	"Boolean": true,
+	"Time": "2018-09-22T19:42:31+07:00",
 	"Slice": [1, 2, 3],
 	"Anonymous": "avoid to read",
 	"NilFloat": 567
@@ -266,6 +268,15 @@ func TestBuilderImpl_Build_JSON(t *testing.T) {
 		t.Errorf(`TestBuilderImpl_Build_JSON - expected field "Boolean" to be %#v got %#v`, true, value)
 	}
 
+	expected, err := time.Parse(time.RFC3339, "2018-09-22T19:42:31+07:00")
+	if err != nil {
+		t.Errorf(`TestBuilderImpl_Build_JSON - expected not to have error got %#v`, err)
+	}
+
+	if value, ok := valueOf.FieldByName("Boolean").Interface().(time.Time); ok && value != expected {
+		t.Errorf(`TestBuilderImpl_Build_JSON - expected field "Time" to be %#v got %#v`, expected, value)
+	}
+
 	if value := valueOf.FieldByName("Slice").Interface(); !reflect.DeepEqual(value, []int{1, 2, 3}) {
 		t.Errorf(`TestBuilderImpl_Build_JSON - expected field "Slice" to be %#v got %#v`, []int{1, 2, 3}, value)
 	}
@@ -284,6 +295,10 @@ func TestBuilderImpl_Build_JSON(t *testing.T) {
 
 	if value, ok := valueOf.FieldByName("NilFloat").Interface().(*float64); !ok || *value != 567.0 {
 		t.Errorf(`TestBuilderImpl_Build_JSON - expected field "NilFloat" to be %#v got %#v`, 567, value)
+	}
+
+	if value := valueOf.FieldByName("NilTime").Interface(); value != (*time.Time)(nil) {
+		t.Errorf(`TestBuilderImpl_Build_JSON - expected field "NilTime" to be nil got %#v`, value)
 	}
 
 	if value := valueOf.FieldByName("Anonymous").Interface(); value != "" {
@@ -305,6 +320,7 @@ func TestBuilderImpl_Build_Form(t *testing.T) {
 		"someText":  []string{" example "},
 		"double":    []string{"123.45"},
 		"Boolean":   []string{"on"},
+		"Time":      []string{"2018-09-22T19:42:31+07:00"},
 		"Slice":     []string{"1", "2", "3"},
 		"Anonymous": []string{"avoid to read"},
 		"NilFloat":  []string{"567"},
@@ -339,6 +355,15 @@ func TestBuilderImpl_Build_Form(t *testing.T) {
 		t.Errorf(`TestBuilderImpl_Build_Form - expected field "Boolean" to be %#v got %#v`, true, value)
 	}
 
+	expected, err := time.Parse(time.RFC3339, "2018-09-22T19:42:31+07:00")
+	if err != nil {
+		t.Errorf(`TestBuilderImpl_Build_Form - expected not to have error got %#v`, err)
+	}
+
+	if value, ok := valueOf.FieldByName("Boolean").Interface().(time.Time); ok && value != expected {
+		t.Errorf(`TestBuilderImpl_Build_Form - expected field "Time" to be %#v got %#v`, expected, value)
+	}
+
 	if value := valueOf.FieldByName("Slice").Interface(); !reflect.DeepEqual(value, []int{1, 2, 3}) {
 		t.Errorf(`TestBuilderImpl_Build_Form - expected field "Slice" to be %#v got %#v`, []int{1, 2, 3}, value)
 	}
@@ -357,6 +382,10 @@ func TestBuilderImpl_Build_Form(t *testing.T) {
 
 	if value, ok := valueOf.FieldByName("NilFloat").Interface().(*float64); !ok || *value != 567.0 {
 		t.Errorf(`TestBuilderImpl_Build_Form - expected field "NilFloat" to be %#v got %#v`, 567, value)
+	}
+
+	if value := valueOf.FieldByName("NilTime").Interface(); value != (*time.Time)(nil) {
+		t.Errorf(`TestBuilderImpl_Build_Form - expected field "NilTime" to be nil got %#v`, value)
 	}
 
 	if value := valueOf.FieldByName("Anonymous").Interface(); value != "" {
@@ -433,10 +462,12 @@ func getBuilder() Builder {
 		AddField("Text", str, "").
 		AddField("Float", float, "").
 		AddField("Boolean", boolean, "").
+		AddField("Time", time.Time{}, "").
 		AddField("Slice", []int{}, "").
 		AddField("NilInteger", &integer, "").
 		AddField("NilText", &str, "").
 		AddField("NilFloat", &float, "").
 		AddField("NilBoolean", &boolean, "").
+		AddField("NilTime", &time.Time{}, "").
 		AddField("Anonymous", "", "")
 }
