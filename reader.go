@@ -3,7 +3,6 @@ package dynamicstruct
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"reflect"
 )
 
@@ -96,89 +95,7 @@ func (r reader) ToStruct(out interface{}) error {
 		return errors.New("MapToStruct: expect pointer to be passed")
 	}
 
-	return r.mapStruct(reflect.Indirect(reflect.ValueOf(r.value)), valueOf)
-}
-
-func (r reader) mapStruct(sourceStruct reflect.Value, destinationStruct reflect.Value) error {
-	destinationStruct = reflect.Indirect(destinationStruct)
-	destinationStructType := destinationStruct.Type()
-
-	if destinationStructType.Kind() != reflect.Struct {
-		return errors.New("MapToStruct: expect pointer to struct to be passed")
-	}
-
-	for i := 0; i < destinationStruct.NumField(); i++ {
-		fval := destinationStruct.Field(i)
-		ftyp := destinationStructType.Field(i)
-		if !sourceStruct.FieldByName(ftyp.Name).IsValid() || !fval.IsValid() || !fval.CanSet() {
-			continue
-		}
-
-		reflected := sourceStruct.FieldByName(ftyp.Name)
-
-		originalDestinationType := ftyp.Type
-		destinationType := originalDestinationType
-		if destinationType.Kind() == reflect.Ptr {
-			destinationType = ftyp.Type.Elem()
-		}
-
-		originalSourceType := reflected.Type()
-		sourceType := originalSourceType
-		if sourceType.Kind() == reflect.Ptr {
-			sourceType = reflected.Type().Elem()
-		}
-
-		if destinationType.Kind() == reflect.Struct && sourceType.Kind() == reflect.Struct {
-			if destinationType.Name() != sourceType.Name() || destinationType.PkgPath() != sourceType.PkgPath() {
-				destination := reflect.Indirect(reflect.New(destinationType))
-				if originalSourceType.Kind() == reflect.Ptr && reflected.IsNil() {
-					continue
-				}
-				err := r.mapStruct(reflect.Indirect(reflected), destination)
-				if err != nil {
-					return err
-				}
-				if originalDestinationType.Kind() == reflect.Ptr && originalSourceType.Kind() != reflect.Ptr {
-					fval.Set(reflect.New(destinationType))
-					fval.Elem().Set(destination)
-				} else if originalDestinationType.Kind() != reflect.Ptr && originalSourceType.Kind() == reflect.Ptr {
-					if !reflected.IsNil() {
-						fval.Set(destination)
-					}
-				} else {
-					fval.Set(destination)
-				}
-				continue
-			}
-		}
-		if destinationType.Kind() == sourceType.Kind() {
-			if originalDestinationType.Kind() == reflect.Ptr && originalSourceType.Kind() != reflect.Ptr {
-				fval.Set(reflect.New(destinationType))
-				fval.Elem().Set(reflected)
-			} else if originalDestinationType.Kind() != reflect.Ptr && originalSourceType.Kind() == reflect.Ptr {
-				if !reflected.IsNil() {
-					fval.Set(reflected.Elem())
-				}
-			} else {
-				fval.Set(reflected)
-			}
-		} else if sourceType.ConvertibleTo(destinationType) {
-			if originalDestinationType.Kind() == reflect.Ptr && originalSourceType.Kind() != reflect.Ptr {
-				fval.Set(reflect.New(destinationType))
-				fval.Elem().Set(reflected.Convert(destinationType))
-			} else if originalDestinationType.Kind() != reflect.Ptr && originalSourceType.Kind() == reflect.Ptr {
-				if !reflected.IsNil() {
-					fval.Set(reflected.Elem().Convert(destinationType))
-				}
-			} else {
-				fval.Set(reflected.Convert(destinationType))
-			}
-		} else {
-			return errors.New(fmt.Sprintf(`MapToStruct: field "%s" is not convertible`, ftyp.Name))
-		}
-	}
-
-	return nil
+	return mapStructFields(reflect.Indirect(reflect.ValueOf(r.value)), valueOf)
 }
 
 func (f fieldReader) NilInt() *int {
@@ -361,3 +278,4 @@ func (f fieldReader) MapTo(out interface{}) error {
 
 	return json.Unmarshal(data, out)
 }
+

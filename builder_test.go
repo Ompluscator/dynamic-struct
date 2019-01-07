@@ -12,20 +12,20 @@ import (
 	"gopkg.in/go-playground/validator.v9"
 )
 
-func TestNewBuilder(t *testing.T) {
+func TestNewStruct(t *testing.T) {
 	value := NewStruct()
 
 	builder, ok := value.(*builderImpl)
 	if !ok {
-		t.Errorf(`TestNewBuilder - expected instance of *builder got %#v`, value)
+		t.Errorf(`TestNewStruct - expected instance of *builder got %#v`, value)
 	}
 
 	if builder.fields == nil {
-		t.Error(`TestNewBuilder - expected instance of *map[string]*fieldConfig got nil`)
+		t.Error(`TestNewStruct - expected instance of *map[string]*fieldConfig got nil`)
 	}
 
 	if len(builder.fields) > 0 {
-		t.Errorf(`TestNewBuilder - expected length of fields map to be 0 got %d`, len(builder.fields))
+		t.Errorf(`TestNewStruct - expected length of fields map to be 0 got %d`, len(builder.fields))
 	}
 }
 
