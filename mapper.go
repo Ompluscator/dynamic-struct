@@ -9,56 +9,45 @@ import (
 func mapStructFields(sourceStruct reflect.Value, destinationStruct reflect.Value) error {
 	destinationStruct = reflect.Indirect(destinationStruct)
 
-	if !isStruct(destinationStruct.Type()) {
+	if !isOriginallyStruct(destinationStruct) {
 		return errors.New("MapToStruct: expect pointer to struct to be passed")
 	}
 
 	for i := 0; i < destinationStruct.NumField(); i++ {
-		mapField(i, destinationStruct, sourceStruct)
+		err := mapField(i, destinationStruct, sourceStruct)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
 func mapField(i int, destinationStruct reflect.Value, sourceStruct reflect.Value) error {
-	destinationStructFieldValue := destinationStruct.Field(i)
+	destinationValue := destinationStruct.Field(i)
 	destinationStructField := destinationStruct.Type().Field(i)
 	if !isPossibleToSetField(i, sourceStruct, destinationStruct) {
 		return nil
 	}
 
 	sourceValue := sourceStruct.FieldByName(destinationStructField.Name)
+	destinationType := getUnderlyingValueType(destinationValue)
+	sourceType := getUnderlyingValueType(sourceValue)
 
-	originalDestinationType := destinationStructFieldValue.Type()
-	destinationTrueType := getTrueFieldType(originalDestinationType)
-
-	originalSourceType := sourceValue.Type()
-	sourceTrueType := getTrueFieldType(originalSourceType)
-
-	if isStruct(originalDestinationType) && isStruct(originalSourceType) && !areSameStructs(originalDestinationType, originalSourceType) {
-		newValue := reflect.Indirect(reflect.New(destinationTrueType))
-		if isPointer(originalSourceType) && sourceValue.IsNil() {
+	if isOriginallyStruct(destinationValue) && isOriginallyStruct(sourceValue) && !areSameStructs(destinationValue, sourceValue) {
+		newValue := reflect.Indirect(reflect.New(destinationType))
+		if isPointer(sourceValue) && sourceValue.IsNil() {
 			return nil
 		}
 		err := mapStructFields(reflect.Indirect(sourceValue), newValue)
 		if err != nil {
 			return err
 		}
-		setNewValue(destinationStructFieldValue, newValue)
-	} else if destinationTrueType.Kind() == sourceTrueType.Kind() {
-		newValue := sourceValue
-		if !isPointer(originalDestinationType) && isPointer(originalSourceType) && !sourceValue.IsNil() {
-			newValue = sourceValue.Elem()
-		}
-		setNewValue(destinationStructFieldValue, newValue)
-	} else if sourceTrueType.ConvertibleTo(destinationTrueType) {
-		var newValue reflect.Value
-		if !isPointer(originalDestinationType) && isPointer(originalSourceType) && !sourceValue.IsNil() {
-			newValue = sourceValue.Elem().Convert(destinationTrueType)
-		} else {
-			newValue = sourceValue.Convert(destinationTrueType)
-		}
-		setNewValue(destinationStructFieldValue, newValue)
+		copyValue(destinationValue, newValue)
+	} else if destinationType.Kind() == sourceType.Kind() {
+		copyValue(destinationValue, sourceValue)
+	} else if sourceType.ConvertibleTo(destinationType) {
+		convertValue(destinationValue, sourceValue)
 	} else {
 		return errors.New(fmt.Sprintf(`MapToStruct: field "%s" is not convertible`, destinationStructField.Name))
 	}
@@ -73,45 +62,75 @@ func isPossibleToSetField(i int, sourceStruct reflect.Value, destinationStruct r
 	return sourceStruct.FieldByName(typ.Field(i).Name).IsValid() && value.IsValid() && value.CanSet()
 }
 
-func isStruct(typ reflect.Type) bool {
-	return getTrueFieldType(typ).Kind() == reflect.Struct
+func isOriginallyStruct(value reflect.Value) bool {
+	return getUnderlyingValueType(value).Kind() == reflect.Struct
 }
 
-func isPointer(typ reflect.Type) bool {
-	return typ.Kind() == reflect.Ptr
+func isPointer(value reflect.Value) bool {
+	return value.Type().Kind() == reflect.Ptr
 }
 
-func isNamedStruct(typ reflect.Type) bool {
+func isStructWithPackageAndName(value reflect.Value) bool {
+	typ := getUnderlyingValueType(value)
+
 	return typ.Name() != "" && typ.PkgPath() != ""
 }
 
-func areSameStructs(first reflect.Type, second reflect.Type) bool {
-	firstTrue := getTrueFieldType(first)
-	secondTrue := getTrueFieldType(second)
+func areSameStructs(first reflect.Value, second reflect.Value) bool {
+	if !isStructWithPackageAndName(first) || !isStructWithPackageAndName(second) {
+		return false
+	}
+	
+	firstType := getUnderlyingValueType(first)
+	secondType := getUnderlyingValueType(second)
 
-	return isNamedStruct(firstTrue) && isNamedStruct(secondTrue) && firstTrue.Name() == secondTrue.Name() && firstTrue.PkgPath() == secondTrue.PkgPath()
+	return firstType.Name() == secondType.Name() && firstType.PkgPath() == secondType.PkgPath()
 }
 
-func setNewValue(destination reflect.Value, source reflect.Value) {
-	destinationType := destination.Type()
-	sourceType := source.Type()
-
-	if isPointer(destinationType) && !isPointer(sourceType) {
-		destination.Set(reflect.New(getTrueFieldType(destinationType)))
-		destination.Elem().Set(source)
-	} else if !isPointer(destinationType) && isPointer(sourceType) {
-		if !source.IsNil() {
-			destination.Set(source)
-		}
-	} else {
-		destination.Set(source)
+func copyValue(destination reflect.Value, source reflect.Value) {
+	if isPointer(source) && source.IsNil() {
+		return
 	}
+
+	destinationType := getUnderlyingValueType(destination)
+
+	if isPointer(destination) {
+		destination.Set(reflect.New(destinationType))
+		destination = destination.Elem()
+	}
+
+	if isPointer(source) {
+		source = source.Elem()
+	}
+
+	destination.Set(source)
 }
 
-func getTrueFieldType(fieldType reflect.Type) reflect.Type {
-	if fieldType.Kind() == reflect.Ptr {
-		return fieldType.Elem()
+func convertValue(destination reflect.Value, source reflect.Value) {
+	if isPointer(source) && source.IsNil() {
+		return
 	}
 
-	return fieldType
+	destinationType := getUnderlyingValueType(destination)
+
+	if isPointer(destination) {
+		destination.Set(reflect.New(destinationType))
+		destination = destination.Elem()
+	}
+
+	if isPointer(source) {
+		source = source.Elem()
+	}
+
+	destination.Set(source.Convert(destinationType))
+}
+
+func getUnderlyingValueType(fieldType reflect.Value) reflect.Type {
+	typ := fieldType.Type()
+
+	for typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
+
+	return typ
 }
