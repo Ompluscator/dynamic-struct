@@ -7,365 +7,469 @@ import (
 )
 
 type (
-	testStructOne struct {
-		String   string
-		Integer  int
-		Float    float64
-		Bool     bool
-		Time     time.Time
-		Integers []int
-		Custom   testSubStructOne
-	}
-
-	testSubStructOne struct {
-		String   string
-		Integer  int
-		Float    float64
-		Bool     bool
-		Time     time.Time
-		Integers []int
-	}
-
-	testStructTwo struct {
-		String   *string
-		Integer  *int
-		Float    *float64
-		Bool     *bool
-		Time     *time.Time
-		Integers *[]int
-		Custom   *testSubStructTwo
-	}
-
-	testSubStructTwo struct {
-		String   *string
-		Integer  *int
-		Float    *float64
-		Bool     *bool
-		Time     *time.Time
-		Integers *[]int
+	testStruct struct {
+		String          string
+		Integer         int
+		Uinteger        uint
+		Float           float64
+		Bool            bool
+		Time            time.Time
+		PointerString   *string
+		PointerInteger  *int
+		PointerUinteger *uint
+		PointerFloat    *float64
+		PointerBool     *bool
+		PointerTime     *time.Time
+		Integers        []int
 	}
 )
 
-func TestReader_GetField(t *testing.T) {
-	reader := NewReader(testStructOne{
+func TestReaderImpl_GetField(t *testing.T) {
+	reader := NewReader(testStruct{
 		String: "some text",
 	})
 
-	if _, ok := reader.GetField("String").(fieldReader); !ok {
-		t.Error(`TestReader_GetField - expected to have field "String"`)
+	if _, ok := reader.GetField("String").(fieldImpl); !ok {
+		t.Error(`TestReaderImpl_GetField - expected to have field "String"`)
 	}
-	if _, ok := reader.GetField("Unknown").(fieldReader); ok {
-		t.Error(`TestReader_GetField - expected not to have field "Unknown"`)
+	if _, ok := reader.GetField("Unknown").(fieldImpl); ok {
+		t.Error(`TestReaderImpl_GetField - expected not to have field "Unknown"`)
 	}
 }
 
-func TestReader_HasField(t *testing.T) {
-	reader := NewReader(testStructOne{
+func TestReaderImpl_HasField(t *testing.T) {
+	reader := NewReader(testStruct{
 		String: "some text",
 	})
 
 	if !reader.HasField("String") {
-		t.Error(`TestReader_HasField - expected to have field "String"`)
+		t.Error(`TestReaderImpl_HasField - expected to have field "String"`)
 	}
 	if reader.HasField("Unknown") {
-		t.Error(`TestReader_HasField - expected not to have field "Unknown"`)
+		t.Error(`TestReaderImpl_HasField - expected not to have field "Unknown"`)
 	}
 }
 
-func TestReader_ToStruct_FullValueToValue(t *testing.T) {
-	text := "some text"
-	integer := 123
-	float := 123.45
-	boolean := true
-	yesterday := time.Now().Add(-24 * time.Hour)
-	integers := []int{1, 2, 3}
+func TestFieldImpl_PointerInt(t *testing.T) {
+	expected := 123
 
-	reader := NewReader(testStructOne{
-		String:   text,
-		Integer:  integer,
-		Float:    float,
-		Bool:     boolean,
-		Time:     yesterday,
-		Integers: integers,
-		Custom: testSubStructOne{
-			String:   text,
-			Integer:  integer,
-			Float:    float,
-			Bool:     boolean,
-			Time:     yesterday,
-			Integers: integers,
-		},
+	reader := NewReader(testStruct{
+		PointerInteger: &expected,
 	})
 
-	expected := testStructOne{
-		String:   text,
-		Integer:  integer,
-		Float:    float,
-		Bool:     boolean,
-		Time:     yesterday,
-		Integers: integers,
-		Custom: testSubStructOne{
-			String:   text,
-			Integer:  integer,
-			Float:    float,
-			Bool:     boolean,
-			Time:     yesterday,
-			Integers: integers,
-		},
-	}
+	value := reader.GetField("PointerInteger").PointerInt()
 
-	value := testStructOne{}
-	err := reader.ToStruct(&value)
-	if err != nil {
-		t.Errorf(`TestReader_ToStruct_FullValueToValue - expected not to have error got %#v`, err)
-	}
-
-	if !reflect.DeepEqual(expected, value) {
-		t.Errorf(`TestReader_ToStruct_FullValueToValue - expected mapped instance to be %#v got %#v`, expected, value)
+	if *value != expected {
+		t.Errorf(`TestFieldImpl_PointerInt - expected field "PointerInteger" to be equal %#v but got %#v`, expected, *value)
 	}
 }
 
-func TestReader_ToStruct_EmptyValueToValue(t *testing.T) {
-	reader := NewReader(testStructOne{})
+func TestFieldImpl_Int(t *testing.T) {
+	expected := 123
 
-	expected := testStructOne{}
-
-	value := testStructOne{}
-	err := reader.ToStruct(&value)
-	if err != nil {
-		t.Errorf(`TestReader_ToStruct_EmptyValueToValue - expected not to have error got %#v`, err)
-	}
-
-	if !reflect.DeepEqual(expected, value) {
-		t.Errorf(`TestReader_ToStruct_EmptyValueToValue - expected mapped instance to be %#v got %#v`, expected, value)
-	}
-}
-
-func TestReader_ToStruct_FullValueToPointer(t *testing.T) {
-	text := "some text"
-	integer := 123
-	float := 123.45
-	boolean := true
-	yesterday := time.Now().Add(-24 * time.Hour)
-	integers := []int{1, 2, 3}
-
-	reader := NewReader(testStructOne{
-		String:   text,
-		Integer:  integer,
-		Float:    float,
-		Bool:     boolean,
-		Time:     yesterday,
-		Integers: integers,
-		Custom: testSubStructOne{
-			String:   text,
-			Integer:  integer,
-			Float:    float,
-			Bool:     boolean,
-			Time:     yesterday,
-			Integers: integers,
-		},
+	reader := NewReader(testStruct{
+		Integer: expected,
 	})
 
-	expected := testStructTwo{
-		String:   &text,
-		Integer:  &integer,
-		Float:    &float,
-		Bool:     &boolean,
-		Time:     &yesterday,
-		Integers: &integers,
-		Custom: &testSubStructTwo{
-			String:   &text,
-			Integer:  &integer,
-			Float:    &float,
-			Bool:     &boolean,
-			Time:     &yesterday,
-			Integers: &integers,
-		},
-	}
+	value := reader.GetField("Integer").Int()
 
-	value := testStructTwo{}
-	err := reader.ToStruct(&value)
-	if err != nil {
-		t.Errorf(`TestReader_ToStruct_FullValueToPointer - expected not to have error got %#v`, err)
-	}
-
-	if !reflect.DeepEqual(expected, value) {
-		t.Errorf(`TestReader_ToStruct_FullValueToPointer - expected mapped instance to be %#v got %#v`, expected, value)
+	if value != expected {
+		t.Errorf(`TestFieldImpl_Int - expected field "Integer" to be equal %#v but got %#v`, expected, value)
 	}
 }
 
-func TestReader_ToStruct_EmptyValueToPointer(t *testing.T) {
-	reader := NewReader(testStructOne{})
+func TestFieldImpl_PointerInt8(t *testing.T) {
+	expected := 123
 
-	text := ""
-	integer := 0
-	float := 0.0
-	boolean := false
-	yesterday := time.Time{}
-	var integers []int
-
-	expected := testStructTwo{
-		String:   &text,
-		Integer:  &integer,
-		Float:    &float,
-		Bool:     &boolean,
-		Time:     &yesterday,
-		Integers: &integers,
-		Custom: &testSubStructTwo{
-			String:   &text,
-			Integer:  &integer,
-			Float:    &float,
-			Bool:     &boolean,
-			Time:     &yesterday,
-			Integers: &integers,
-		},
-	}
-
-	value := testStructTwo{}
-	err := reader.ToStruct(&value)
-	if err != nil {
-		t.Errorf(`TestReader_ToStruct_EmptyValueToPointer - expected not to have error got %#v`, err)
-	}
-
-	if !reflect.DeepEqual(expected, value) {
-		t.Errorf(`TestReader_ToStruct_EmptyValueToPointer - expected mapped instance to be %#v got %#v`, expected, value)
-	}
-}
-
-func TestReader_ToStruct_FullPointerToValue(t *testing.T) {
-	text := "some text"
-	integer := 123
-	float := 123.45
-	boolean := true
-	yesterday := time.Now().Add(-24 * time.Hour)
-	integers := []int{1, 2, 3}
-
-	reader := NewReader(testStructTwo{
-		String:   &text,
-		Integer:  &integer,
-		Float:    &float,
-		Bool:     &boolean,
-		Time:     &yesterday,
-		Integers: &integers,
-		Custom: &testSubStructTwo{
-			String:   &text,
-			Integer:  &integer,
-			Float:    &float,
-			Bool:     &boolean,
-			Time:     &yesterday,
-			Integers: &integers,
-		},
+	reader := NewReader(testStruct{
+		PointerInteger: &expected,
 	})
 
-	expected := testStructOne{
-		String:   text,
-		Integer:  integer,
-		Float:    float,
-		Bool:     boolean,
-		Time:     yesterday,
-		Integers: integers,
-		Custom: testSubStructOne{
-			String:   text,
-			Integer:  integer,
-			Float:    float,
-			Bool:     boolean,
-			Time:     yesterday,
-			Integers: integers,
-		},
-	}
+	value := reader.GetField("PointerInteger").PointerInt8()
 
-	value := testStructOne{}
-	err := reader.ToStruct(&value)
-	if err != nil {
-		t.Errorf(`TestReader_ToStruct_FullPointerToValue - expected not to have error got %#v`, err)
-	}
-
-	if !reflect.DeepEqual(expected, value) {
-		t.Errorf(`TestReader_ToStruct_FullPointerToValue - expected mapped instance to be %#v got %#v`, expected, value)
+	if *value != int8(expected) {
+		t.Errorf(`TestFieldImpl_PointerInt8 - expected field "PointerInteger" to be equal %#v but got %#v`, expected, *value)
 	}
 }
 
-func TestReader_ToStruct_EmptyPointerToValue(t *testing.T) {
-	reader := NewReader(testStructTwo{})
+func TestFieldImpl_Int8(t *testing.T) {
+	expected := 123
 
-	expected := testStructOne{}
-
-	value := testStructOne{}
-	err := reader.ToStruct(&value)
-	if err != nil {
-		t.Errorf(`TestReader_ToStruct_EmptyPointerToValue - expected not to have error got %#v`, err)
-	}
-
-	if !reflect.DeepEqual(expected, value) {
-		t.Errorf(`TestReader_ToStruct_EmptyPointerToValue - expected mapped instance to be %#v got %#v`, expected, value)
-	}
-}
-
-func TestReader_ToStruct_FullPointerToPointer(t *testing.T) {
-	text := "some text"
-	integer := 123
-	float := 123.45
-	boolean := true
-	yesterday := time.Now().Add(-24 * time.Hour)
-	integers := []int{1, 2, 3}
-
-	reader := NewReader(testStructTwo{
-		String:   &text,
-		Integer:  &integer,
-		Float:    &float,
-		Bool:     &boolean,
-		Time:     &yesterday,
-		Integers: &integers,
-		Custom: &testSubStructTwo{
-			String:   &text,
-			Integer:  &integer,
-			Float:    &float,
-			Bool:     &boolean,
-			Time:     &yesterday,
-			Integers: &integers,
-		},
+	reader := NewReader(testStruct{
+		Integer: expected,
 	})
 
-	expected := testStructTwo{
-		String:   &text,
-		Integer:  &integer,
-		Float:    &float,
-		Bool:     &boolean,
-		Time:     &yesterday,
-		Integers: &integers,
-		Custom: &testSubStructTwo{
-			String:   &text,
-			Integer:  &integer,
-			Float:    &float,
-			Bool:     &boolean,
-			Time:     &yesterday,
-			Integers: &integers,
-		},
-	}
+	value := reader.GetField("Integer").Int8()
 
-	value := testStructTwo{}
-	err := reader.ToStruct(&value)
-	if err != nil {
-		t.Errorf(`TestReader_ToStruct_FullPointerToPointer - expected not to have error got %#v`, err)
-	}
-
-	if !reflect.DeepEqual(expected, value) {
-		t.Errorf(`TestReader_ToStruct_FullPointerToPointer - expected mapped instance to be %#v got %#v`, expected, value)
+	if value != int8(expected) {
+		t.Errorf(`TestFieldImpl_Int8 - expected field "Integer" to be equal %#v but got %#v`, expected, value)
 	}
 }
 
-func TestReader_ToStruct_EmptyPointerToPointer(t *testing.T) {
-	reader := NewReader(testStructTwo{})
+func TestFieldImpl_PointerInt16(t *testing.T) {
+	expected := 123
 
-	expected := testStructTwo{}
+	reader := NewReader(testStruct{
+		PointerInteger: &expected,
+	})
 
-	value := testStructTwo{}
-	err := reader.ToStruct(&value)
-	if err != nil {
-		t.Errorf(`TestReader_ToStruct_EmptyPointerToPointer - expected not to have error got %#v`, err)
+	value := reader.GetField("PointerInteger").PointerInt16()
+
+	if *value != int16(expected) {
+		t.Errorf(`TestFieldImpl_PointerInt16 - expected field "PointerInteger" to be equal %#v but got %#v`, expected, *value)
+	}
+}
+
+func TestFieldImpl_Int16(t *testing.T) {
+	expected := 123
+
+	reader := NewReader(testStruct{
+		Integer: expected,
+	})
+
+	value := reader.GetField("Integer").Int16()
+
+	if value != int16(expected) {
+		t.Errorf(`TestFieldImpl_Int16 - expected field "Integer" to be equal %#v but got %#v`, expected, value)
+	}
+}
+
+func TestFieldImpl_PointerInt32(t *testing.T) {
+	expected := 123
+
+	reader := NewReader(testStruct{
+		PointerInteger: &expected,
+	})
+
+	value := reader.GetField("PointerInteger").PointerInt32()
+
+	if *value != int32(expected) {
+		t.Errorf(`TestFieldImpl_PointerInt32 - expected field "PointerInteger" to be equal %#v but got %#v`, expected, *value)
+	}
+}
+
+func TestFieldImpl_Int32(t *testing.T) {
+	expected := 123
+
+	reader := NewReader(testStruct{
+		Integer: expected,
+	})
+
+	value := reader.GetField("Integer").Int32()
+
+	if value != int32(expected) {
+		t.Errorf(`TestFieldImpl_Int32 - expected field "Integer" to be equal %#v but got %#v`, expected, value)
+	}
+}
+
+func TestFieldImpl_PointerInt64(t *testing.T) {
+	expected := 123
+
+	reader := NewReader(testStruct{
+		PointerInteger: &expected,
+	})
+
+	value := reader.GetField("PointerInteger").PointerInt64()
+
+	if *value != int64(expected) {
+		t.Errorf(`TestFieldImpl_PointerInt64 - expected field "PointerInteger" to be equal %#v but got %#v`, expected, *value)
+	}
+}
+
+func TestFieldImpl_Int64(t *testing.T) {
+	expected := 123
+
+	reader := NewReader(testStruct{
+		Integer: expected,
+	})
+
+	value := reader.GetField("Integer").Int64()
+
+	if value != int64(expected) {
+		t.Errorf(`TestFieldImpl_Int64 - expected field "Integer" to be equal %#v but got %#v`, expected, value)
+	}
+}
+
+func TestFieldImpl_Uint(t *testing.T) {
+	expected := uint(123)
+
+	reader := NewReader(testStruct{
+		Uinteger: expected,
+	})
+
+	value := reader.GetField("Uinteger").Uint()
+
+	if value != expected {
+		t.Errorf(`TestFieldImpl_Uint - expected field "Uinteger" to be equal %#v but got %#v`, expected, value)
+	}
+}
+
+func TestFieldImpl_PointerUint8(t *testing.T) {
+	expected := uint(123)
+
+	reader := NewReader(testStruct{
+		PointerUinteger: &expected,
+	})
+
+	value := reader.GetField("PointerUinteger").PointerUint8()
+
+	if *value != uint8(expected) {
+		t.Errorf(`TestFieldImpl_PointerUint8 - expected field "PointerUinteger" to be equal %#v but got %#v`, expected, *value)
+	}
+}
+
+func TestFieldImpl_Uint8(t *testing.T) {
+	expected := uint(123)
+
+	reader := NewReader(testStruct{
+		Uinteger: expected,
+	})
+
+	value := reader.GetField("Uinteger").Uint8()
+
+	if value != uint8(expected) {
+		t.Errorf(`TestFieldImpl_Uint8 - expected field "Uinteger" to be equal %#v but got %#v`, expected, value)
+	}
+}
+
+func TestFieldImpl_PointerUint16(t *testing.T) {
+	expected := uint(123)
+
+	reader := NewReader(testStruct{
+		PointerUinteger: &expected,
+	})
+
+	value := reader.GetField("PointerUinteger").PointerUint16()
+
+	if *value != uint16(expected) {
+		t.Errorf(`TestFieldImpl_PointerUint16 - expected field "PointerUinteger" to be equal %#v but got %#v`, expected, *value)
+	}
+}
+
+func TestFieldImpl_Uint16(t *testing.T) {
+	expected := uint(123)
+
+	reader := NewReader(testStruct{
+		Uinteger: expected,
+	})
+
+	value := reader.GetField("Uinteger").Uint16()
+
+	if value != uint16(expected) {
+		t.Errorf(`TestFieldImpl_Uint16 - expected field "Uinteger" to be equal %#v but got %#v`, expected, value)
+	}
+}
+
+func TestFieldImpl_PointerUint32(t *testing.T) {
+	expected := uint(123)
+
+	reader := NewReader(testStruct{
+		PointerUinteger: &expected,
+	})
+
+	value := reader.GetField("PointerUinteger").PointerUint32()
+
+	if *value != uint32(expected) {
+		t.Errorf(`TestFieldImpl_PointerUint32 - expected field "PointerUinteger" to be equal %#v but got %#v`, expected, *value)
+	}
+}
+
+func TestFieldImpl_Uint32(t *testing.T) {
+	expected := uint(123)
+
+	reader := NewReader(testStruct{
+		Uinteger: expected,
+	})
+
+	value := reader.GetField("Uinteger").Uint32()
+
+	if value != uint32(expected) {
+		t.Errorf(`TestFieldImpl_Uint32 - expected field "Uinteger" to be equal %#v but got %#v`, expected, value)
+	}
+}
+
+func TestFieldImpl_PointerUint64(t *testing.T) {
+	expected := uint(123)
+
+	reader := NewReader(testStruct{
+		PointerUinteger: &expected,
+	})
+
+	value := reader.GetField("PointerUinteger").PointerUint64()
+
+	if *value != uint64(expected) {
+		t.Errorf(`TestFieldImpl_PointerUint64 - expected field "PointerUinteger" to be equal %#v but got %#v`, expected, *value)
+	}
+}
+
+func TestFieldImpl_Uint64(t *testing.T) {
+	expected := uint(123)
+
+	reader := NewReader(testStruct{
+		Uinteger: expected,
+	})
+
+	value := reader.GetField("Uinteger").Uint64()
+
+	if value != uint64(expected) {
+		t.Errorf(`TestFieldImpl_Uint64 - expected field "Uinteger" to be equal %#v but got %#v`, expected, value)
+	}
+}
+
+func TestFieldImpl_PointerFloat32(t *testing.T) {
+	expected := 123.0
+
+	reader := NewReader(testStruct{
+		PointerFloat: &expected,
+	})
+
+	value := reader.GetField("PointerFloat").PointerFloat32()
+
+	if *value != float32(expected) {
+		t.Errorf(`TestFieldImpl_PointerFloat32 - expected field "PointerFloat" to be equal %#v but got %#v`, expected, *value)
+	}
+}
+
+func TestFieldImpl_Float32(t *testing.T) {
+	expected := 123.0
+
+	reader := NewReader(testStruct{
+		Float: expected,
+	})
+
+	value := reader.GetField("Float").Float32()
+
+	if value != float32(expected) {
+		t.Errorf(`TestFieldImpl_Float32 - expected field "Float" to be equal %#v but got %#v`, expected, value)
+	}
+}
+
+func TestFieldImpl_PointerFloat64(t *testing.T) {
+	expected := 123.0
+
+	reader := NewReader(testStruct{
+		PointerFloat: &expected,
+	})
+
+	value := reader.GetField("PointerFloat").PointerFloat64()
+
+	if *value != expected {
+		t.Errorf(`TestFieldImpl_PointerFloat64 - expected field "PointerFloat" to be equal %#v but got %#v`, expected, *value)
+	}
+}
+
+func TestFieldImpl_Float64(t *testing.T) {
+	expected := 123.0
+
+	reader := NewReader(testStruct{
+		Float: expected,
+	})
+
+	value := reader.GetField("Float").Float64()
+
+	if value != expected {
+		t.Errorf(`TestFieldImpl_Float64 - expected field "Float" to be equal %#v but got %#v`, expected, value)
+	}
+}
+
+func TestFieldImpl_PointerString(t *testing.T) {
+	expected := "something"
+
+	reader := NewReader(testStruct{
+		PointerString: &expected,
+	})
+
+	value := reader.GetField("PointerString").PointerString()
+
+	if *value != expected {
+		t.Errorf(`TestFieldImpl_PointerString - expected field "PointerString" to be equal %#v but got %#v`, expected, *value)
+	}
+}
+
+func TestFieldImpl_String(t *testing.T) {
+	expected := "something"
+
+	reader := NewReader(testStruct{
+		String: expected,
+	})
+
+	value := reader.GetField("String").String()
+
+	if value != expected {
+		t.Errorf(`TestFieldImpl_String - expected field "String" to be equal %#v but got %#v`, expected, value)
+	}
+}
+
+func TestFieldImpl_PointerBool(t *testing.T) {
+	expected := true
+
+	reader := NewReader(testStruct{
+		PointerBool: &expected,
+	})
+
+	value := reader.GetField("PointerBool").PointerBool()
+
+	if *value != expected {
+		t.Errorf(`TestFieldImpl_PointerBool - expected field "PointerBool" to be equal %#v but got %#v`, expected, *value)
+	}
+}
+
+func TestFieldImpl_Bool(t *testing.T) {
+	expected := true
+
+	reader := NewReader(testStruct{
+		Bool: expected,
+	})
+
+	value := reader.GetField("Bool").Bool()
+
+	if value != expected {
+		t.Errorf(`TestFieldImpl_Bool - expected field "Bool" to be equal %#v but got %#v`, expected, value)
+	}
+}
+
+func TestFieldImpl_PointerTime(t *testing.T) {
+	expected := time.Now()
+
+	reader := NewReader(testStruct{
+		PointerTime: &expected,
+	})
+
+	value := reader.GetField("PointerTime").PointerTime()
+
+	if *value != expected {
+		t.Errorf(`TestFieldImpl_PointerTime - expected field "PointerTime" to be equal %#v but got %#v`, expected, *value)
+	}
+}
+
+func TestFieldImpl_Time(t *testing.T) {
+	expected := time.Now()
+
+	reader := NewReader(testStruct{
+		Time: expected,
+	})
+
+	value := reader.GetField("Time").Time()
+
+	if value != expected {
+		t.Errorf(`TestFieldImpl_Time - expected field "Time" to be equal %#v but got %#v`, expected, value)
+	}
+}
+
+func TestFieldImpl_Interface(t *testing.T) {
+	expected := []int{1, 2, 3}
+
+	reader := NewReader(testStruct{
+		Integers: expected,
+	})
+
+	value, ok := reader.GetField("Integers").Interface().([]int)
+
+	if !ok {
+		t.Error(`TestFieldImpl_Interface - expected field "String" to be instance of []int`)
 	}
 
-	if !reflect.DeepEqual(expected, value) {
-		t.Errorf(`TestReader_ToStruct_EmptyPointerToPointer - expected mapped instance to be %#v got %#v`, expected, value)
+	if !reflect.DeepEqual(value, expected) {
+		t.Errorf(`TestFieldImpl_Interface - expected field "String" to be equal %#v but got %#v`, expected, value)
 	}
 }

@@ -1,281 +1,277 @@
 package dynamicstruct
 
 import (
-	"encoding/json"
-	"errors"
+	"fmt"
 	"reflect"
+	"time"
 )
 
 type (
 	Reader interface {
 		HasField(name string) bool
-		GetField(name string) FieldReader
-		ToStruct(out interface{}) error
+		GetField(name string) Field
 	}
 
-	FieldReader interface {
-		NilInt() *int
+	Field interface {
+		PointerInt() *int
 		Int() int
-		NilInt8() *int8
+		PointerInt8() *int8
 		Int8() int8
-		NilInt16() *int16
+		PointerInt16() *int16
 		Int16() int16
-		NilInt32() *int32
+		PointerInt32() *int32
 		Int32() int32
-		NilInt64() *int64
+		PointerInt64() *int64
 		Int64() int64
-		NilUint() *uint
+		PointerUint() *uint
 		Uint() uint
-		NilUint8() *uint8
+		PointerUint8() *uint8
 		Uint8() uint8
-		NilUint16() *uint16
+		PointerUint16() *uint16
 		Uint16() uint16
-		NilUint32() *uint32
+		PointerUint32() *uint32
 		Uint32() uint32
-		NilUint64() *uint64
+		PointerUint64() *uint64
 		Uint64() uint64
-		NilFloat32() *float32
+		PointerFloat32() *float32
 		Float32() float32
-		NilFloat64() *float64
+		PointerFloat64() *float64
 		Float64() float64
-		NilString() *string
+		PointerString() *string
 		String() string
-		NilBool() *bool
+		PointerBool() *bool
 		Bool() bool
+		PointerTime() *time.Time
+		Time() time.Time
 		Interface() interface{}
-		MapTo(out interface{}) error
 	}
 
-	reader struct {
-		value  interface{}
-		fields map[string]fieldReader
+	readImpl struct {
+		fields map[string]fieldImpl
 	}
 
-	fieldReader struct {
-		reflect.Value
+	fieldImpl struct {
+		field reflect.StructField
+		value reflect.Value
 	}
 )
 
 func NewReader(value interface{}) Reader {
-	fields := map[string]fieldReader{}
+	fields := map[string]fieldImpl{}
 
 	valueOf := reflect.Indirect(reflect.ValueOf(value))
 	typeOf := valueOf.Type()
 
 	for i := 0; i < valueOf.NumField(); i++ {
-		fval := valueOf.Field(i)
-		ftyp := typeOf.Field(i)
-		fields[ftyp.Name] = fieldReader{
-			fval,
+		field := typeOf.Field(i)
+		fields[field.Name] = fieldImpl{
+			field: field,
+			value: valueOf.Field(i),
 		}
 	}
 
-	return reader{
-		value:  value,
+	return readImpl{
 		fields: fields,
 	}
 }
 
-func (r reader) HasField(name string) bool {
+func (r readImpl) HasField(name string) bool {
 	_, ok := r.fields[name]
 	return ok
 }
 
-func (r reader) GetField(name string) FieldReader {
+func (r readImpl) GetField(name string) Field {
 	if !r.HasField(name) {
 		return nil
 	}
 	return r.fields[name]
 }
 
-func (r reader) ToStruct(out interface{}) error {
-	valueOf := reflect.ValueOf(out)
-
-	if valueOf.Kind() != reflect.Ptr {
-		return errors.New("MapToStruct: expect pointer to be passed")
-	}
-
-	return mapStructFields(reflect.Indirect(reflect.ValueOf(r.value)), valueOf)
-}
-
-func (f fieldReader) NilInt() *int {
-	if f.IsNil() {
+func (f fieldImpl) PointerInt() *int {
+	if f.value.IsNil() {
 		return nil
 	}
 	value := f.Int()
 	return &value
 }
 
-func (f fieldReader) Int() int {
-	return int(reflect.Indirect(f.Value).Int())
+func (f fieldImpl) Int() int {
+	return int(reflect.Indirect(f.value).Int())
 }
 
-func (f fieldReader) NilInt8() *int8 {
-	if f.IsNil() {
+func (f fieldImpl) PointerInt8() *int8 {
+	if f.value.IsNil() {
 		return nil
 	}
 	value := f.Int8()
 	return &value
 }
 
-func (f fieldReader) Int8() int8 {
-	return int8(reflect.Indirect(f.Value).Int())
+func (f fieldImpl) Int8() int8 {
+	return int8(reflect.Indirect(f.value).Int())
 }
 
-func (f fieldReader) NilInt16() *int16 {
-	if f.IsNil() {
+func (f fieldImpl) PointerInt16() *int16 {
+	if f.value.IsNil() {
 		return nil
 	}
 	value := f.Int16()
 	return &value
 }
 
-func (f fieldReader) Int16() int16 {
-	return int16(reflect.Indirect(f.Value).Int())
+func (f fieldImpl) Int16() int16 {
+	return int16(reflect.Indirect(f.value).Int())
 }
 
-func (f fieldReader) NilInt32() *int32 {
-	if f.IsNil() {
+func (f fieldImpl) PointerInt32() *int32 {
+	if f.value.IsNil() {
 		return nil
 	}
 	value := f.Int32()
 	return &value
 }
 
-func (f fieldReader) Int32() int32 {
-	return int32(reflect.Indirect(f.Value).Int())
+func (f fieldImpl) Int32() int32 {
+	return int32(reflect.Indirect(f.value).Int())
 }
 
-func (f fieldReader) NilInt64() *int64 {
-	if f.IsNil() {
+func (f fieldImpl) PointerInt64() *int64 {
+	if f.value.IsNil() {
 		return nil
 	}
 	value := f.Int64()
 	return &value
 }
 
-func (f fieldReader) Int64() int64 {
-	return reflect.Indirect(f.Value).Int()
+func (f fieldImpl) Int64() int64 {
+	return reflect.Indirect(f.value).Int()
 }
 
-func (f fieldReader) NilUint() *uint {
-	if f.IsNil() {
+func (f fieldImpl) PointerUint() *uint {
+	if f.value.IsNil() {
 		return nil
 	}
 	value := f.Uint()
 	return &value
 }
 
-func (f fieldReader) Uint() uint {
-	return uint(reflect.Indirect(f.Value).Uint())
+func (f fieldImpl) Uint() uint {
+	return uint(reflect.Indirect(f.value).Uint())
 }
 
-func (f fieldReader) NilUint8() *uint8 {
-	if f.IsNil() {
+func (f fieldImpl) PointerUint8() *uint8 {
+	if f.value.IsNil() {
 		return nil
 	}
 	value := f.Uint8()
 	return &value
 }
 
-func (f fieldReader) Uint8() uint8 {
-	return uint8(reflect.Indirect(f.Value).Uint())
+func (f fieldImpl) Uint8() uint8 {
+	return uint8(reflect.Indirect(f.value).Uint())
 }
 
-func (f fieldReader) NilUint16() *uint16 {
-	if f.IsNil() {
+func (f fieldImpl) PointerUint16() *uint16 {
+	if f.value.IsNil() {
 		return nil
 	}
 	value := f.Uint16()
 	return &value
 }
 
-func (f fieldReader) Uint16() uint16 {
-	return uint16(reflect.Indirect(f.Value).Uint())
+func (f fieldImpl) Uint16() uint16 {
+	return uint16(reflect.Indirect(f.value).Uint())
 }
 
-func (f fieldReader) NilUint32() *uint32 {
-	if f.IsNil() {
+func (f fieldImpl) PointerUint32() *uint32 {
+	if f.value.IsNil() {
 		return nil
 	}
 	value := f.Uint32()
 	return &value
 }
 
-func (f fieldReader) Uint32() uint32 {
-	return uint32(reflect.Indirect(f.Value).Uint())
+func (f fieldImpl) Uint32() uint32 {
+	return uint32(reflect.Indirect(f.value).Uint())
 }
 
-func (f fieldReader) NilUint64() *uint64 {
-	if f.IsNil() {
+func (f fieldImpl) PointerUint64() *uint64 {
+	if f.value.IsNil() {
 		return nil
 	}
 	value := f.Uint64()
 	return &value
 }
 
-func (f fieldReader) Uint64() uint64 {
-	return reflect.Indirect(f.Value).Uint()
+func (f fieldImpl) Uint64() uint64 {
+	return reflect.Indirect(f.value).Uint()
 }
 
-func (f fieldReader) NilFloat32() *float32 {
-	if f.IsNil() {
+func (f fieldImpl) PointerFloat32() *float32 {
+	if f.value.IsNil() {
 		return nil
 	}
 	value := f.Float32()
 	return &value
 }
 
-func (f fieldReader) Float32() float32 {
-	return float32(reflect.Indirect(f.Value).Float())
+func (f fieldImpl) Float32() float32 {
+	return float32(reflect.Indirect(f.value).Float())
 }
 
-func (f fieldReader) NilFloat64() *float64 {
-	if f.IsNil() {
+func (f fieldImpl) PointerFloat64() *float64 {
+	if f.value.IsNil() {
 		return nil
 	}
 	value := f.Float64()
 	return &value
 }
 
-func (f fieldReader) Float64() float64 {
-	return reflect.Indirect(f.Value).Float()
+func (f fieldImpl) Float64() float64 {
+	return reflect.Indirect(f.value).Float()
 }
 
-func (f fieldReader) NilBool() *bool {
-	if f.IsNil() {
-		return nil
-	}
-	value := f.Bool()
-	return &value
-}
-
-func (f fieldReader) Bool() bool {
-	return reflect.Indirect(f.Value).Bool()
-}
-
-func (f fieldReader) NilString() *string {
-	if f.IsNil() {
+func (f fieldImpl) PointerString() *string {
+	if f.value.IsNil() {
 		return nil
 	}
 	value := f.String()
 	return &value
 }
 
-func (f fieldReader) String() string {
-	return reflect.Indirect(f.Value).String()
+func (f fieldImpl) String() string {
+	return reflect.Indirect(f.value).String()
 }
 
-func (f fieldReader) ReflectValue() reflect.Value {
-	return f.Value
+func (f fieldImpl) PointerBool() *bool {
+	if f.value.IsNil() {
+		return nil
+	}
+	value := f.Bool()
+	return &value
 }
 
-func (f fieldReader) MapTo(out interface{}) error {
-	data, err := json.Marshal(f.Value.Interface())
-	if err != nil {
-		return err
+func (f fieldImpl) Bool() bool {
+	return reflect.Indirect(f.value).Bool()
+}
+
+func (f fieldImpl) PointerTime() *time.Time {
+	if f.value.IsNil() {
+		return nil
+	}
+	value := f.Time()
+	return &value
+}
+
+func (f fieldImpl) Time() time.Time {
+	value, ok := reflect.Indirect(f.value).Interface().(time.Time)
+	if !ok {
+		panic(fmt.Sprintf(`field "%s" is not instance of time.Time`, f.field.Name))
 	}
 
-	return json.Unmarshal(data, out)
+	return value
 }
 
+func (f fieldImpl) Interface() interface{} {
+	return f.value.Interface()
+}
