@@ -7,42 +7,221 @@ import (
 )
 
 type (
+	// Reader is helper interface which provides possibility to
+	// access struct's fields' values, reads and provides theirs values.
 	Reader interface {
+		// HasField checks if struct instance has a field with a given name.
+		//
+		// if reader.HasField("SomeFloatField") { ...
+		//
 		HasField(name string) bool
+		// GetField returns struct instance's field value.
+		// If there is no such field, it returns nil.
+		// Usable to edit existing struct's field.
+		//
+		// field := reader.GetField("SomeFloatField")
+		//
 		GetField(name string) Field
+		// GetAllFields returns a list of all struct instance's fields.
+		//
+		// for _, field := range reader.GetAllFields() { ...
+		//
+		GetAllFields() []Field
 	}
 
+	// Field is a wrapper for struct's field's value.
+	// It provides methods for easier field's value reading.
 	Field interface {
+		// GetName returns field's name in struct.
+		//
+		// name := field.GetName()
+		//
+		Name() string
+		// PointerInt returns a pointer for instance of int type.
+		// It panics if field's value can't be casted to desired type.
+		//
+		// number := reader.GetField("SomeField").PointerInt()
+		//
 		PointerInt() *int
+		// Int returns an instance of int type.
+		// It panics if field's value can't be casted to desired type.
+		//
+		// number := reader.GetField("SomeField").Int()
+		//
 		Int() int
+		// PointerInt8 returns a pointer for instance of int8 type.
+		// It panics if field's value can't be casted to desired type.
+		//
+		// number := reader.GetField("SomeField").PointerInt8()
+		//
 		PointerInt8() *int8
+		// Int8 returns aan instance of int8 type.
+		// It panics if field's value can't be casted to desired type.
+		//
+		// number := reader.GetField("SomeField").Int8()
+		//
 		Int8() int8
+		// PointerInt16 returns a pointer for instance of int16 type.
+		// It panics if field's value can't be casted to desired type.
+		//
+		// number := reader.GetField("SomeField").PointerInt16()
+		//
 		PointerInt16() *int16
+		// Int16 returns an instance of int16 type.
+		// It panics if field's value can't be casted to desired type.
+		//
+		// number := reader.GetField("SomeField").Int16()
+		//
 		Int16() int16
+		// PointerInt32 returns a pointer for instance of int32 type.
+		// It panics if field's value can't be casted to desired type.
+		//
+		// number := reader.GetField("SomeField").PointerInt32()
+		//
 		PointerInt32() *int32
+		// Int32 returns an instance of int32 type.
+		// It panics if field's value can't be casted to desired type.
+		//
+		// number := reader.GetField("SomeField").Int32()
+		//
 		Int32() int32
+		// PointerInt64 returns a pointer for instance of int64 type.
+		// It panics if field's value can't be casted to desired type.
+		//
+		// number := reader.GetField("SomeField").PointerInt64()
+		//
 		PointerInt64() *int64
+		// Int64 returns an instance of int64 type.
+		// It panics if field's value can't be casted to desired type.
+		//
+		// number := reader.GetField("SomeField").Int64()
+		//
 		Int64() int64
+		// PointerUint returns a pointer for instance of uint type.
+		// It panics if field's value can't be casted to desired type.
+		//
+		// unsigned := reader.GetField("SomeField").PointerUint()
+		//
 		PointerUint() *uint
+		// Uint returns an instance of uint type.
+		// It panics if field's value can't be casted to desired type.
+		//
+		// unsigned := reader.GetField("SomeField").Uint()
+		//
 		Uint() uint
+		// PointerUint8 returns a pointer for instance of uint8 type.
+		// It panics if field's value can't be casted to desired type.
+		//
+		// unsigned := reader.GetField("SomeField").PointerUint8()
+		//
 		PointerUint8() *uint8
+		// Uint8 returns an instance of uint8 type.
+		// It panics if field's value can't be casted to desired type.
+		//
+		// unsigned := reader.GetField("SomeField").Uint8()
+		//
 		Uint8() uint8
+		// PointerUint16 returns a pointer for instance of uint16 type.
+		// It panics if field's value can't be casted to desired type.
+		//
+		// unsigned := reader.GetField("SomeField").PointerUint16()
+		//
 		PointerUint16() *uint16
+		// Uint16 returns an instance of uint16 type.
+		// It panics if field's value can't be casted to desired type.
+		//
+		// unsigned := reader.GetField("SomeField").Uint16()
+		//
 		Uint16() uint16
+		// PointerUint32 returns a pointer for instance of uint32 type.
+		// It panics if field's value can't be casted to desired type.
+		//
+		// unsigned := reader.GetField("SomeField").PointerUint32()
+		//
 		PointerUint32() *uint32
+		// Uint32 returns an instance of uint32 type.
+		// It panics if field's value can't be casted to desired type.
+		//
+		// unsigned := reader.GetField("SomeField").Uint32()
+		//
 		Uint32() uint32
+		// PointerUint64 returns a pointer for instance of uint64 type.
+		// It panics if field's value can't be casted to desired type.
+		//
+		// unsigned := reader.GetField("SomeField").PointerUint64()
+		//
 		PointerUint64() *uint64
+		// Uint64 returns an instance of uint64 type.
+		// It panics if field's value can't be casted to desired type.
+		//
+		// unsigned := reader.GetField("SomeField").Uint64()
+		//
 		Uint64() uint64
+		// PointerFloat32 returns a pointer for instance of float32 type.
+		// It panics if field's value can't be casted to desired type.
+		//
+		// boolean := reader.GetField("SomeField").PointerFloat32()
+		//
 		PointerFloat32() *float32
+		// Float32 returns an of float32 type.
+		// It panics if field's value can't be casted to desired type.
+		//
+		// boolean := reader.GetField("SomeField").Float32()
+		//
 		Float32() float32
+		// PointerFloat64 returns a pointer for instance of float64 type.
+		// It panics if field's value can't be casted to desired type.
+		//
+		// boolean := reader.GetField("SomeField").PointerFloat64()
+		//
 		PointerFloat64() *float64
+		// Float64 returns an instance of float64 type.
+		// It panics if field's value can't be casted to desired type.
+		//
+		// boolean := reader.GetField("SomeField").Float64()
+		//
 		Float64() float64
+		// PointerString returns a pointer for instance of string type.
+		// It panics if field's value can't be casted to desired type.
+		//
+		// text := reader.GetField("SomeField").PointerString()
+		//
 		PointerString() *string
+		// String returns aan instance of string type.
+		// It panics if field's value can't be casted to desired type.
+		//
+		// text := reader.GetField("SomeField").String()
+		//
 		String() string
+		// PointerBool returns a pointer for instance of bool type.
+		// It panics if field's value can't be casted to desired type.
+		//
+		// boolean := reader.GetField("SomeField").PointerBool()
+		//
 		PointerBool() *bool
+		// Bool returns an instance of bool type.
+		// It panics if field's value can't be casted to desired type.
+		//
+		// boolean := reader.GetField("SomeField").Bool()
+		//
 		Bool() bool
+		// PointerTime returns a pointer for instance of time.Time{} type.
+		// It panics if field's value can't be casted to desired type.
+		//
+		// dateTime := reader.GetField("SomeField").PointerTime()
+		//
 		PointerTime() *time.Time
+		// Time returns an instance of time.Time{} type.
+		// It panics if field's value can't be casted to desired type.
+		//
+		// dateTime := reader.GetField("SomeField").Time()
+		//
 		Time() time.Time
+		// Interface returns an interface which represents field's value.
+		// Useful for casting value into desired type.
+		//
+		// slice, ok := reader.GetField("SomeField").Interface().([]int)
+		//
 		Interface() interface{}
 	}
 
@@ -56,6 +235,8 @@ type (
 	}
 )
 
+// NewReader reads struct instance and provides instance of
+// Reader interface to give possibility to read all fields' values.
 func NewReader(value interface{}) Reader {
 	fields := map[string]fieldImpl{}
 
@@ -85,6 +266,20 @@ func (r readImpl) GetField(name string) Field {
 		return nil
 	}
 	return r.fields[name]
+}
+
+func (r readImpl) GetAllFields() []Field {
+	var fields []Field
+
+	for _, field := range r.fields {
+		fields = append(fields, field)
+	}
+
+	return fields
+}
+
+func (f fieldImpl) Name() string {
+	return f.field.Name
 }
 
 func (f fieldImpl) PointerInt() *int {

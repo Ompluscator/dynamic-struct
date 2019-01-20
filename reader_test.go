@@ -50,6 +50,22 @@ func TestReaderImpl_HasField(t *testing.T) {
 	}
 }
 
+func TestReaderImpl_GetAllFields(t *testing.T) {
+	reader := NewReader(testStruct{})
+
+	if len(reader.GetAllFields()) != 13 {
+		t.Errorf(`TestReaderImpl_GetAllFields - expected to have 10 fields but got %d`, len(reader.GetAllFields()))
+	}
+}
+
+func TestFieldImpl_Name(t *testing.T) {
+	reader := NewReader(testStruct{})
+
+	if reader.GetField("String").Name() != "String" {
+		t.Errorf(`TestFieldImpl_Name - expected field name to be "String"  got %s`, reader.GetField("String").Name())
+	}
+}
+
 func TestFieldImpl_PointerInt(t *testing.T) {
 	expected := 123
 
