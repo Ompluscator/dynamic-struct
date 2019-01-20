@@ -62,6 +62,14 @@ func TestFieldImpl_PointerInt(t *testing.T) {
 	if *value != expected {
 		t.Errorf(`TestFieldImpl_PointerInt - expected field "PointerInteger" to be equal %#v but got %#v`, expected, *value)
 	}
+
+	reader = NewReader(testStruct{})
+
+	value = reader.GetField("PointerInteger").PointerInt()
+
+	if value != nil {
+		t.Errorf(`TestFieldImpl_PointerInt - expected field "PointerInteger" to be nil but got %#v`, *value)
+	}
 }
 
 func TestFieldImpl_Int(t *testing.T) {
@@ -89,6 +97,14 @@ func TestFieldImpl_PointerInt8(t *testing.T) {
 
 	if *value != int8(expected) {
 		t.Errorf(`TestFieldImpl_PointerInt8 - expected field "PointerInteger" to be equal %#v but got %#v`, expected, *value)
+	}
+
+	reader = NewReader(testStruct{})
+
+	value = reader.GetField("PointerInteger").PointerInt8()
+
+	if value != nil {
+		t.Errorf(`TestFieldImpl_PointerInt8 - expected field "PointerInteger" to be nil but got %#v`, *value)
 	}
 }
 
@@ -118,6 +134,14 @@ func TestFieldImpl_PointerInt16(t *testing.T) {
 	if *value != int16(expected) {
 		t.Errorf(`TestFieldImpl_PointerInt16 - expected field "PointerInteger" to be equal %#v but got %#v`, expected, *value)
 	}
+
+	reader = NewReader(testStruct{})
+
+	value = reader.GetField("PointerInteger").PointerInt16()
+
+	if value != nil {
+		t.Errorf(`TestFieldImpl_PointerInt16 - expected field "PointerInteger" to be nil but got %#v`, *value)
+	}
 }
 
 func TestFieldImpl_Int16(t *testing.T) {
@@ -145,6 +169,14 @@ func TestFieldImpl_PointerInt32(t *testing.T) {
 
 	if *value != int32(expected) {
 		t.Errorf(`TestFieldImpl_PointerInt32 - expected field "PointerInteger" to be equal %#v but got %#v`, expected, *value)
+	}
+
+	reader = NewReader(testStruct{})
+
+	value = reader.GetField("PointerInteger").PointerInt32()
+
+	if value != nil {
+		t.Errorf(`TestFieldImpl_PointerInt32 - expected field "PointerInteger" to be nil but got %#v`, *value)
 	}
 }
 
@@ -174,6 +206,14 @@ func TestFieldImpl_PointerInt64(t *testing.T) {
 	if *value != int64(expected) {
 		t.Errorf(`TestFieldImpl_PointerInt64 - expected field "PointerInteger" to be equal %#v but got %#v`, expected, *value)
 	}
+
+	reader = NewReader(testStruct{})
+
+	value = reader.GetField("PointerInteger").PointerInt64()
+
+	if value != nil {
+		t.Errorf(`TestFieldImpl_PointerInt64 - expected field "PointerInteger" to be nil but got %#v`, *value)
+	}
 }
 
 func TestFieldImpl_Int64(t *testing.T) {
@@ -187,6 +227,28 @@ func TestFieldImpl_Int64(t *testing.T) {
 
 	if value != int64(expected) {
 		t.Errorf(`TestFieldImpl_Int64 - expected field "Integer" to be equal %#v but got %#v`, expected, value)
+	}
+}
+
+func TestFieldImpl_PointerUint(t *testing.T) {
+	expected := uint(123)
+
+	reader := NewReader(testStruct{
+		PointerUinteger: &expected,
+	})
+
+	value := reader.GetField("PointerUinteger").PointerUint()
+
+	if *value != expected {
+		t.Errorf(`TestFieldImpl_PointerUint - expected field "PointerUinteger" to be equal %#v but got %#v`, expected, *value)
+	}
+
+	reader = NewReader(testStruct{})
+
+	value = reader.GetField("PointerUinteger").PointerUint()
+
+	if value != nil {
+		t.Errorf(`TestFieldImpl_PointerUint - expected field "PointerUinteger" to be nil but got %#v`, *value)
 	}
 }
 
@@ -216,6 +278,14 @@ func TestFieldImpl_PointerUint8(t *testing.T) {
 	if *value != uint8(expected) {
 		t.Errorf(`TestFieldImpl_PointerUint8 - expected field "PointerUinteger" to be equal %#v but got %#v`, expected, *value)
 	}
+
+	reader = NewReader(testStruct{})
+
+	value = reader.GetField("PointerUinteger").PointerUint8()
+
+	if value != nil {
+		t.Errorf(`TestFieldImpl_PointerUint8 - expected field "PointerUinteger" to be nil but got %#v`, *value)
+	}
 }
 
 func TestFieldImpl_Uint8(t *testing.T) {
@@ -243,6 +313,14 @@ func TestFieldImpl_PointerUint16(t *testing.T) {
 
 	if *value != uint16(expected) {
 		t.Errorf(`TestFieldImpl_PointerUint16 - expected field "PointerUinteger" to be equal %#v but got %#v`, expected, *value)
+	}
+
+	reader = NewReader(testStruct{})
+
+	value = reader.GetField("PointerUinteger").PointerUint16()
+
+	if value != nil {
+		t.Errorf(`TestFieldImpl_PointerUint16 - expected field "PointerUinteger" to be nil but got %#v`, *value)
 	}
 }
 
@@ -272,6 +350,14 @@ func TestFieldImpl_PointerUint32(t *testing.T) {
 	if *value != uint32(expected) {
 		t.Errorf(`TestFieldImpl_PointerUint32 - expected field "PointerUinteger" to be equal %#v but got %#v`, expected, *value)
 	}
+
+	reader = NewReader(testStruct{})
+
+	value = reader.GetField("PointerUinteger").PointerUint32()
+
+	if value != nil {
+		t.Errorf(`TestFieldImpl_PointerUint32 - expected field "PointerUinteger" to be nil but got %#v`, *value)
+	}
 }
 
 func TestFieldImpl_Uint32(t *testing.T) {
@@ -299,6 +385,14 @@ func TestFieldImpl_PointerUint64(t *testing.T) {
 
 	if *value != uint64(expected) {
 		t.Errorf(`TestFieldImpl_PointerUint64 - expected field "PointerUinteger" to be equal %#v but got %#v`, expected, *value)
+	}
+
+	reader = NewReader(testStruct{})
+
+	value = reader.GetField("PointerUinteger").PointerUint64()
+
+	if value != nil {
+		t.Errorf(`TestFieldImpl_PointerUint64 - expected field "PointerUinteger" to be nil but got %#v`, *value)
 	}
 }
 
@@ -328,6 +422,14 @@ func TestFieldImpl_PointerFloat32(t *testing.T) {
 	if *value != float32(expected) {
 		t.Errorf(`TestFieldImpl_PointerFloat32 - expected field "PointerFloat" to be equal %#v but got %#v`, expected, *value)
 	}
+
+	reader = NewReader(testStruct{})
+
+	value = reader.GetField("PointerFloat").PointerFloat32()
+
+	if value != nil {
+		t.Errorf(`TestFieldImpl_PointerFloat32 - expected field "PointerFloat" to be nil but got %#v`, *value)
+	}
 }
 
 func TestFieldImpl_Float32(t *testing.T) {
@@ -355,6 +457,14 @@ func TestFieldImpl_PointerFloat64(t *testing.T) {
 
 	if *value != expected {
 		t.Errorf(`TestFieldImpl_PointerFloat64 - expected field "PointerFloat" to be equal %#v but got %#v`, expected, *value)
+	}
+
+	reader = NewReader(testStruct{})
+
+	value = reader.GetField("PointerFloat").PointerFloat64()
+
+	if value != nil {
+		t.Errorf(`TestFieldImpl_PointerFloat64 - expected field "PointerFloat" to be nil but got %#v`, *value)
 	}
 }
 
@@ -384,6 +494,14 @@ func TestFieldImpl_PointerString(t *testing.T) {
 	if *value != expected {
 		t.Errorf(`TestFieldImpl_PointerString - expected field "PointerString" to be equal %#v but got %#v`, expected, *value)
 	}
+
+	reader = NewReader(testStruct{})
+
+	value = reader.GetField("PointerString").PointerString()
+
+	if value != nil {
+		t.Errorf(`TestFieldImpl_PointerString - expected field "PointerString" to be nil but got %#v`, *value)
+	}
 }
 
 func TestFieldImpl_String(t *testing.T) {
@@ -411,6 +529,14 @@ func TestFieldImpl_PointerBool(t *testing.T) {
 
 	if *value != expected {
 		t.Errorf(`TestFieldImpl_PointerBool - expected field "PointerBool" to be equal %#v but got %#v`, expected, *value)
+	}
+
+	reader = NewReader(testStruct{})
+
+	value = reader.GetField("PointerBool").PointerBool()
+
+	if value != nil {
+		t.Errorf(`TestFieldImpl_PointerBool - expected field "PointerBool" to be nil but got %#v`, *value)
 	}
 }
 
@@ -440,6 +566,14 @@ func TestFieldImpl_PointerTime(t *testing.T) {
 	if *value != expected {
 		t.Errorf(`TestFieldImpl_PointerTime - expected field "PointerTime" to be equal %#v but got %#v`, expected, *value)
 	}
+
+	reader = NewReader(testStruct{})
+
+	value = reader.GetField("PointerTime").PointerTime()
+
+	if value != nil {
+		t.Errorf(`TestFieldImpl_PointerTime - expected field "PointerTime" to be nil but got %#v`, *value)
+	}
 }
 
 func TestFieldImpl_Time(t *testing.T) {
@@ -454,6 +588,13 @@ func TestFieldImpl_Time(t *testing.T) {
 	if value != expected {
 		t.Errorf(`TestFieldImpl_Time - expected field "Time" to be equal %#v but got %#v`, expected, value)
 	}
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("TestFieldImpl_Time - expected panic by casting int to instance of time.Time{}")
+		}
+	}()
+	value = reader.GetField("Integer").Time()
 }
 
 func TestFieldImpl_Interface(t *testing.T) {

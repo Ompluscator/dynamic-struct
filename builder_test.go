@@ -201,6 +201,11 @@ func TestBuilderImpl_GetField(t *testing.T) {
 	if !reflect.DeepEqual(field, expected) {
 		t.Errorf(`TestExtendStruct - expected field to be %#v got %#v`, expected, field)
 	}
+
+	undefined := builder.GetField("Undefined")
+	if undefined != nil {
+		t.Errorf(`TestBuilder_GetField - expected nil got %#v`, value)
+	}
 }
 
 func TestFieldConfigImpl_SetTag(t *testing.T) {
