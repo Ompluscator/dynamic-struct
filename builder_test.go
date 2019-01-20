@@ -230,7 +230,7 @@ func TestBuilderImpl_Build_JSON(t *testing.T) {
 	builder.GetField("Text").SetTag(`json:"someText"`)
 	builder.GetField("Float").SetTag(`json:"double"`)
 	builder.GetField("Anonymous").SetTag(`json:"-"`)
-	value := builder.Build()
+	value := builder.Build().New()
 
 	data := []byte(`
 {
@@ -313,7 +313,7 @@ func TestBuilderImpl_Build_Form(t *testing.T) {
 	builder.GetField("Text").SetTag(`form:"someText" conform:"trim"`)
 	builder.GetField("Float").SetTag(`form:"double"`)
 	builder.GetField("Anonymous").SetTag(`form:"-"`)
-	value := builder.Build()
+	value := builder.Build().New()
 
 	data := url.Values{
 		"int":       []string{"123"},
@@ -399,7 +399,7 @@ func TestBuilderImpl_Build_Validate(t *testing.T) {
 	builder.GetField("Integer").SetTag(`validate:"gt=0"`)
 	builder.GetField("Float").SetTag(`validate:"gte=0"`)
 	builder.GetField("Text").SetTag(`validate:"required"`)
-	value := builder.Build()
+	value := builder.Build().New()
 
 	err := validator.New().Struct(value)
 	if err == nil {

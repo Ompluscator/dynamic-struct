@@ -19,6 +19,25 @@ Works out-of-the-box with:
 * https://golang.org/pkg/encoding/json/
 * ...
 
+## Benchmarks
+
+Environment:
+* MacBook Pro (13-inch, Early 2015), 2,7 GHz Intel Core i5
+* go version go1.11 darwin/amd64
+
+```
+goos: darwin
+goarch: amd64
+pkg: github.com/ompluscator/dynamic-struct
+BenchmarkClassicWay_NewInstance-4                 2000000000     0.34 ns/op
+BenchmarkNewStruct_NewInstance-4                    10000000      141 ns/op
+BenchmarkNewStruct_NewInstance_Parallel-4           20000000     89.6 ns/op
+BenchmarkExtendStruct_NewInstance-4                 10000000      135 ns/op
+BenchmarkExtendStruct_NewInstance_Parallel-4        20000000     89.5 ns/op
+BenchmarkMergeStructs_NewInstance-4                 10000000      140 ns/op
+BenchmarkMergeStructs_NewInstance_Parallel-4        20000000     94.3 ns/op
+```
+
 ## Add new struct
 ```go
 package main
@@ -39,7 +58,8 @@ func main() {
 		AddField("Boolean", false, "").
 		AddField("Slice", []int{}, "").
 		AddField("Anonymous", "", `json:"-"`).
-		Build()
+		Build().
+		New()
 
 	data := []byte(`
 {
@@ -91,7 +111,8 @@ func main() {
 		AddField("Boolean", false, "").
 		AddField("Slice", []int{}, "").
 		AddField("Anonymous", "", `json:"-"`).
-		Build()
+		Build().
+		New()
 
 	data := []byte(`
 {
@@ -146,7 +167,8 @@ type DataTwo struct {
 
 func main() {
 	instance := dynamicstruct.MergeStructs(DataOne{}, DataTwo{}).
-		Build()
+		Build().
+		New()
 
 	data := []byte(`
 {
@@ -196,7 +218,8 @@ func main() {
 		AddField("Boolean", false, "").
 		AddField("Slice", []int{}, "").
 		AddField("Anonymous", "", `json:"-"`).
-		Build()
+		Build().
+		New()
 
 	data := []byte(`
 {

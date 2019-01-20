@@ -8,12 +8,16 @@ type (
 		RemoveField(name string) Builder
 		HasField(name string) bool
 		GetField(name string) FieldConfig
-		Build() interface{}
+		Build() DynamicStruct
 	}
 
 	FieldConfig interface {
 		SetType(typ interface{}) FieldConfig
 		SetTag(tag string) FieldConfig
+	}
+
+	DynamicStruct interface {
+		New() interface{}
 	}
 
 	builderImpl struct {
@@ -23,6 +27,10 @@ type (
 	fieldConfigImpl struct {
 		typ interface{}
 		tag string
+	}
+
+	dynamicStructImpl struct {
+		definition reflect.Type
 	}
 )
 
@@ -80,7 +88,7 @@ func (b *builderImpl) GetField(name string) FieldConfig {
 	return b.fields[name]
 }
 
-func (b *builderImpl) Build() interface{} {
+func (b *builderImpl) Build() DynamicStruct {
 	var structFields []reflect.StructField
 
 	for name, field := range b.fields {
@@ -91,7 +99,9 @@ func (b *builderImpl) Build() interface{} {
 		})
 	}
 
-	return reflect.New(reflect.StructOf(structFields)).Interface()
+	return &dynamicStructImpl{
+		definition: reflect.StructOf(structFields),
+	}
 }
 
 func (f *fieldConfigImpl) SetType(typ interface{}) FieldConfig {
@@ -102,4 +112,8 @@ func (f *fieldConfigImpl) SetType(typ interface{}) FieldConfig {
 func (f *fieldConfigImpl) SetTag(tag string) FieldConfig {
 	f.tag = tag
 	return f
+}
+
+func (ds *dynamicStructImpl) New() interface{}  {
+	return reflect.New(ds.definition).Interface()
 }
