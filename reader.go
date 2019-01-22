@@ -28,7 +28,12 @@ type (
 		// for _, field := range reader.GetAllFields() { ...
 		//
 		GetAllFields() []Field
-
+		// ToStruct maps all read values to passed instance of struct, by setting
+		// all its values for fields with same names.
+		// It returns an error if argument is not a pointer to a struct.
+		//
+		// err := reader.ToStruct(&instance)
+		//
 		ToStruct(value interface{}) error
 	}
 
