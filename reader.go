@@ -1,6 +1,7 @@
 package dynamicstruct
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"time"
@@ -27,6 +28,8 @@ type (
 		// for _, field := range reader.GetAllFields() { ...
 		//
 		GetAllFields() []Field
+
+		ToStruct(value interface{}) error
 	}
 
 	// Field is a wrapper for struct's field's value.
@@ -276,6 +279,56 @@ func (r readImpl) GetAllFields() []Field {
 	}
 
 	return fields
+}
+
+func (r readImpl) ToStruct(value interface{}) error {
+	valueOf := reflect.ValueOf(value)
+
+	if valueOf.Kind() != reflect.Ptr || valueOf.IsNil() {
+		return errors.New("ToStruct: expected a pointer as an argument")
+	}
+
+	valueOf = valueOf.Elem()
+	typeOf := valueOf.Type()
+
+	if valueOf.Kind() != reflect.Struct {
+		return errors.New("ToStruct: expected a pointer to struct as an argument")
+	}
+
+	for i := 0; i < valueOf.NumField(); i++ {
+		fieldType := typeOf.Field(i)
+		fieldValue := valueOf.Field(i)
+
+		original, ok := r.fields[fieldType.Name]
+		if !ok {
+			continue
+		}
+
+		if fieldValue.CanSet() && r.haveSameTypes(original.value.Type(), fieldValue.Type()) {
+			fieldValue.Set(original.value)
+		}
+	}
+
+	return nil
+}
+
+func (r readImpl) haveSameTypes(first reflect.Type, second reflect.Type) bool {
+	if first.Kind() != second.Kind() {
+		return false
+	}
+
+	switch first.Kind() {
+	case reflect.Ptr:
+		return r.haveSameTypes(first.Elem(), second.Elem())
+	case reflect.Struct:
+		return first.PkgPath() == second.PkgPath() && first.Name() == second.Name()
+	case reflect.Slice:
+		return r.haveSameTypes(first.Elem(), second.Elem())
+	case reflect.Map:
+		return r.haveSameTypes(first.Elem(), second.Elem()) && r.haveSameTypes(first.Key(), second.Key())
+	default:
+		return first.Kind() == second.Kind()
+	}
 }
 
 func (f fieldImpl) Name() string {

@@ -11,6 +11,7 @@ Main features:
 * Removing existing fields from struct
 * Modifying fields' types and tags
 * Easy reading of dynamic structs
+* Mapping dynamic struct with set values to existing struct
 
 Works out-of-the-box with:
 * https://github.com/go-playground/form
@@ -210,25 +211,31 @@ import (
 	"github.com/ompluscator/dynamic-struct"
 )
 
+type DataOne struct {
+	Integer int     `json:"int"`
+	Text    string  `json:"someText"`
+	Float   float64 `json:"double"`
+}
+
+type DataTwo struct {
+	Boolean bool
+	Slice []int
+	Anonymous string `json:"-"`
+}
+
 func main() {
-	instance := dynamicstruct.NewStruct().
-		AddField("Integer", 0, `json:"int"`).
-		AddField("Text", "", `json:"someText"`).
-		AddField("Float", 0.0, `json:"double"`).
-		AddField("Boolean", false, "").
-		AddField("Slice", []int{}, "").
-		AddField("Anonymous", "", `json:"-"`).
+	instance := dynamicstruct.MergeStructs(DataOne{}, DataTwo{}).
 		Build().
 		New()
 
 	data := []byte(`
 {
-    "int": 123,
-    "someText": "example",
-    "double": 123.45,
-    "Boolean": true,
-    "Slice": [1, 2, 3],
-    "Anonymous": "avoid to read"
+"int": 123,
+"someText": "example",
+"double": 123.45,
+"Boolean": true,
+"Slice": [1, 2, 3],
+"Anonymous": "avoid to read"
 }
 `)
 
@@ -237,14 +244,22 @@ func main() {
 		log.Fatal(err)
 	}
 
-	value := dynamicstruct.NewReader(instance)
-	fmt.Println("Integer", value.GetField("Integer").Int())
-	fmt.Println("Text", value.GetField("Text").String())
-	fmt.Println("Float", value.GetField("Float").Float64())
-	fmt.Println("Boolean", value.GetField("Boolean").Bool())
-	fmt.Println("Slice", value.GetField("Slice").Interface().([]int))
-	fmt.Println("Anonymous", value.GetField("Anonymous").String())
+	reader := dynamicstruct.NewReader(instance)
 
+	fmt.Println("Integer", reader.GetField("Integer").Int())
+	fmt.Println("Text", reader.GetField("Text").String())
+	fmt.Println("Float", reader.GetField("Float").Float64())
+	fmt.Println("Boolean", reader.GetField("Boolean").Bool())
+	fmt.Println("Slice", reader.GetField("Slice").Interface().([]int))
+	fmt.Println("Anonymous", reader.GetField("Anonymous").String())
+
+	var dataOne DataOne
+	err = reader.ToStruct(&dataOne)
+	fmt.Println(err, dataOne)
+
+	var dataTwo DataTwo
+	err = reader.ToStruct(&dataTwo)
+	fmt.Println(err, dataTwo)
 	// Out:
 	// Integer 123
 	// Text example
@@ -252,5 +267,7 @@ func main() {
 	// Boolean true
 	// Slice [1 2 3]
 	// Anonymous
+	// <nil> {123 example 123.45}
+	// <nil> {true [1 2 3] }
 }
 ```

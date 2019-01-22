@@ -7,7 +7,7 @@ import (
 )
 
 type (
-	testStruct struct {
+	testStructOne struct {
 		String          string
 		Integer         int
 		Uinteger        uint
@@ -22,10 +22,12 @@ type (
 		PointerTime     *time.Time
 		Integers        []int
 	}
+
+	testStructTwo struct{}
 )
 
 func TestReaderImpl_GetField(t *testing.T) {
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		String: "some text",
 	})
 
@@ -38,7 +40,7 @@ func TestReaderImpl_GetField(t *testing.T) {
 }
 
 func TestReaderImpl_HasField(t *testing.T) {
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		String: "some text",
 	})
 
@@ -51,15 +53,102 @@ func TestReaderImpl_HasField(t *testing.T) {
 }
 
 func TestReaderImpl_GetAllFields(t *testing.T) {
-	reader := NewReader(testStruct{})
+	reader := NewReader(testStructOne{})
 
 	if len(reader.GetAllFields()) != 13 {
 		t.Errorf(`TestReaderImpl_GetAllFields - expected to have 10 fields but got %d`, len(reader.GetAllFields()))
 	}
 }
 
+func TestReadImpl_HaveSameTypes(t *testing.T) {
+	reader := readImpl{}
+
+	integer := 0
+	str := ""
+	float := 0.0
+	boolean := false
+
+	testCases := []struct {
+		first  interface{}
+		second interface{}
+		result bool
+	}{
+		{0, 1, true},
+		{"foo", "bar", true},
+		{0.0, 1.0, true},
+		{true, false, true},
+		{[]int{1}, []int{}, true},
+		{&integer, &integer, true},
+		{&str, &str, true},
+		{&float, &float, true},
+		{&boolean, &boolean, true},
+		{testStructOne{}, testStructOne{}, true},
+		{&testStructOne{}, &testStructOne{}, true},
+		{map[string]int{}, map[string]int{}, true},
+		{0, 1.0, false},
+		{0, "foo", false},
+		{0, false, false},
+		{0, []int{}, false},
+		{0, map[string]int{}, false},
+		{[]float64{}, []int{}, false},
+		{map[string]float64{}, map[string]int{}, false},
+		{map[byte]int{}, map[string]int{}, false},
+		{testStructOne{}, &testStructOne{}, false},
+		{testStructOne{}, testStructTwo{}, false},
+		{testStructOne{}, time.Time{}, false},
+	}
+
+	for _, testCase := range testCases {
+		if reader.haveSameTypes(reflect.TypeOf(testCase.first), reflect.TypeOf(testCase.second)) != testCase.result {
+			if testCase.result {
+				t.Errorf(`TestReadImpl_HaveSameTypes - expected for %#v and %#v to have same type`, testCase.first, testCase.second)
+			} else {
+				t.Errorf(`TestReadImpl_HaveSameTypes - expected for %#v and %#v not to have same type`, testCase.first, testCase.second)
+			}
+		}
+	}
+}
+
+func TestReadImpl_ToStruct(t *testing.T) {
+	integer := 123
+	uinteger := uint(456)
+	str := "text"
+	float := 123.45
+	boolean := true
+	now := time.Now()
+
+	value := testStructOne{
+		String:          str,
+		Integer:         integer,
+		Uinteger:        uinteger,
+		Float:           float,
+		Bool:            boolean,
+		Time:            now,
+		PointerString:   &str,
+		PointerInteger:  &integer,
+		PointerUinteger: &uinteger,
+		PointerFloat:    &float,
+		PointerBool:     &boolean,
+		PointerTime:     &now,
+		Integers:        []int{1, 2, 3},
+	}
+
+	reader := NewReader(value)
+
+	var result testStructOne
+	err := reader.ToStruct(&result)
+
+	if err != nil {
+		t.Errorf(`TestReadImpl_ToStruct - expected not to have error got %#v`, err)
+	}
+
+	if !reflect.DeepEqual(value, result) {
+		t.Errorf(`TestReadImpl_ToStruct - expected struct to be equal %#v but got %#v`, result, value)
+	}
+}
+
 func TestFieldImpl_Name(t *testing.T) {
-	reader := NewReader(testStruct{})
+	reader := NewReader(testStructOne{})
 
 	if reader.GetField("String").Name() != "String" {
 		t.Errorf(`TestFieldImpl_Name - expected field name to be "String"  got %s`, reader.GetField("String").Name())
@@ -69,7 +158,7 @@ func TestFieldImpl_Name(t *testing.T) {
 func TestFieldImpl_PointerInt(t *testing.T) {
 	expected := 123
 
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		PointerInteger: &expected,
 	})
 
@@ -79,7 +168,7 @@ func TestFieldImpl_PointerInt(t *testing.T) {
 		t.Errorf(`TestFieldImpl_PointerInt - expected field "PointerInteger" to be equal %#v but got %#v`, expected, *value)
 	}
 
-	reader = NewReader(testStruct{})
+	reader = NewReader(testStructOne{})
 
 	value = reader.GetField("PointerInteger").PointerInt()
 
@@ -91,7 +180,7 @@ func TestFieldImpl_PointerInt(t *testing.T) {
 func TestFieldImpl_Int(t *testing.T) {
 	expected := 123
 
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		Integer: expected,
 	})
 
@@ -105,7 +194,7 @@ func TestFieldImpl_Int(t *testing.T) {
 func TestFieldImpl_PointerInt8(t *testing.T) {
 	expected := 123
 
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		PointerInteger: &expected,
 	})
 
@@ -115,7 +204,7 @@ func TestFieldImpl_PointerInt8(t *testing.T) {
 		t.Errorf(`TestFieldImpl_PointerInt8 - expected field "PointerInteger" to be equal %#v but got %#v`, expected, *value)
 	}
 
-	reader = NewReader(testStruct{})
+	reader = NewReader(testStructOne{})
 
 	value = reader.GetField("PointerInteger").PointerInt8()
 
@@ -127,7 +216,7 @@ func TestFieldImpl_PointerInt8(t *testing.T) {
 func TestFieldImpl_Int8(t *testing.T) {
 	expected := 123
 
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		Integer: expected,
 	})
 
@@ -141,7 +230,7 @@ func TestFieldImpl_Int8(t *testing.T) {
 func TestFieldImpl_PointerInt16(t *testing.T) {
 	expected := 123
 
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		PointerInteger: &expected,
 	})
 
@@ -151,7 +240,7 @@ func TestFieldImpl_PointerInt16(t *testing.T) {
 		t.Errorf(`TestFieldImpl_PointerInt16 - expected field "PointerInteger" to be equal %#v but got %#v`, expected, *value)
 	}
 
-	reader = NewReader(testStruct{})
+	reader = NewReader(testStructOne{})
 
 	value = reader.GetField("PointerInteger").PointerInt16()
 
@@ -163,7 +252,7 @@ func TestFieldImpl_PointerInt16(t *testing.T) {
 func TestFieldImpl_Int16(t *testing.T) {
 	expected := 123
 
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		Integer: expected,
 	})
 
@@ -177,7 +266,7 @@ func TestFieldImpl_Int16(t *testing.T) {
 func TestFieldImpl_PointerInt32(t *testing.T) {
 	expected := 123
 
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		PointerInteger: &expected,
 	})
 
@@ -187,7 +276,7 @@ func TestFieldImpl_PointerInt32(t *testing.T) {
 		t.Errorf(`TestFieldImpl_PointerInt32 - expected field "PointerInteger" to be equal %#v but got %#v`, expected, *value)
 	}
 
-	reader = NewReader(testStruct{})
+	reader = NewReader(testStructOne{})
 
 	value = reader.GetField("PointerInteger").PointerInt32()
 
@@ -199,7 +288,7 @@ func TestFieldImpl_PointerInt32(t *testing.T) {
 func TestFieldImpl_Int32(t *testing.T) {
 	expected := 123
 
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		Integer: expected,
 	})
 
@@ -213,7 +302,7 @@ func TestFieldImpl_Int32(t *testing.T) {
 func TestFieldImpl_PointerInt64(t *testing.T) {
 	expected := 123
 
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		PointerInteger: &expected,
 	})
 
@@ -223,7 +312,7 @@ func TestFieldImpl_PointerInt64(t *testing.T) {
 		t.Errorf(`TestFieldImpl_PointerInt64 - expected field "PointerInteger" to be equal %#v but got %#v`, expected, *value)
 	}
 
-	reader = NewReader(testStruct{})
+	reader = NewReader(testStructOne{})
 
 	value = reader.GetField("PointerInteger").PointerInt64()
 
@@ -235,7 +324,7 @@ func TestFieldImpl_PointerInt64(t *testing.T) {
 func TestFieldImpl_Int64(t *testing.T) {
 	expected := 123
 
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		Integer: expected,
 	})
 
@@ -249,7 +338,7 @@ func TestFieldImpl_Int64(t *testing.T) {
 func TestFieldImpl_PointerUint(t *testing.T) {
 	expected := uint(123)
 
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		PointerUinteger: &expected,
 	})
 
@@ -259,7 +348,7 @@ func TestFieldImpl_PointerUint(t *testing.T) {
 		t.Errorf(`TestFieldImpl_PointerUint - expected field "PointerUinteger" to be equal %#v but got %#v`, expected, *value)
 	}
 
-	reader = NewReader(testStruct{})
+	reader = NewReader(testStructOne{})
 
 	value = reader.GetField("PointerUinteger").PointerUint()
 
@@ -271,7 +360,7 @@ func TestFieldImpl_PointerUint(t *testing.T) {
 func TestFieldImpl_Uint(t *testing.T) {
 	expected := uint(123)
 
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		Uinteger: expected,
 	})
 
@@ -285,7 +374,7 @@ func TestFieldImpl_Uint(t *testing.T) {
 func TestFieldImpl_PointerUint8(t *testing.T) {
 	expected := uint(123)
 
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		PointerUinteger: &expected,
 	})
 
@@ -295,7 +384,7 @@ func TestFieldImpl_PointerUint8(t *testing.T) {
 		t.Errorf(`TestFieldImpl_PointerUint8 - expected field "PointerUinteger" to be equal %#v but got %#v`, expected, *value)
 	}
 
-	reader = NewReader(testStruct{})
+	reader = NewReader(testStructOne{})
 
 	value = reader.GetField("PointerUinteger").PointerUint8()
 
@@ -307,7 +396,7 @@ func TestFieldImpl_PointerUint8(t *testing.T) {
 func TestFieldImpl_Uint8(t *testing.T) {
 	expected := uint(123)
 
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		Uinteger: expected,
 	})
 
@@ -321,7 +410,7 @@ func TestFieldImpl_Uint8(t *testing.T) {
 func TestFieldImpl_PointerUint16(t *testing.T) {
 	expected := uint(123)
 
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		PointerUinteger: &expected,
 	})
 
@@ -331,7 +420,7 @@ func TestFieldImpl_PointerUint16(t *testing.T) {
 		t.Errorf(`TestFieldImpl_PointerUint16 - expected field "PointerUinteger" to be equal %#v but got %#v`, expected, *value)
 	}
 
-	reader = NewReader(testStruct{})
+	reader = NewReader(testStructOne{})
 
 	value = reader.GetField("PointerUinteger").PointerUint16()
 
@@ -343,7 +432,7 @@ func TestFieldImpl_PointerUint16(t *testing.T) {
 func TestFieldImpl_Uint16(t *testing.T) {
 	expected := uint(123)
 
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		Uinteger: expected,
 	})
 
@@ -357,7 +446,7 @@ func TestFieldImpl_Uint16(t *testing.T) {
 func TestFieldImpl_PointerUint32(t *testing.T) {
 	expected := uint(123)
 
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		PointerUinteger: &expected,
 	})
 
@@ -367,7 +456,7 @@ func TestFieldImpl_PointerUint32(t *testing.T) {
 		t.Errorf(`TestFieldImpl_PointerUint32 - expected field "PointerUinteger" to be equal %#v but got %#v`, expected, *value)
 	}
 
-	reader = NewReader(testStruct{})
+	reader = NewReader(testStructOne{})
 
 	value = reader.GetField("PointerUinteger").PointerUint32()
 
@@ -379,7 +468,7 @@ func TestFieldImpl_PointerUint32(t *testing.T) {
 func TestFieldImpl_Uint32(t *testing.T) {
 	expected := uint(123)
 
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		Uinteger: expected,
 	})
 
@@ -393,7 +482,7 @@ func TestFieldImpl_Uint32(t *testing.T) {
 func TestFieldImpl_PointerUint64(t *testing.T) {
 	expected := uint(123)
 
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		PointerUinteger: &expected,
 	})
 
@@ -403,7 +492,7 @@ func TestFieldImpl_PointerUint64(t *testing.T) {
 		t.Errorf(`TestFieldImpl_PointerUint64 - expected field "PointerUinteger" to be equal %#v but got %#v`, expected, *value)
 	}
 
-	reader = NewReader(testStruct{})
+	reader = NewReader(testStructOne{})
 
 	value = reader.GetField("PointerUinteger").PointerUint64()
 
@@ -415,7 +504,7 @@ func TestFieldImpl_PointerUint64(t *testing.T) {
 func TestFieldImpl_Uint64(t *testing.T) {
 	expected := uint(123)
 
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		Uinteger: expected,
 	})
 
@@ -429,7 +518,7 @@ func TestFieldImpl_Uint64(t *testing.T) {
 func TestFieldImpl_PointerFloat32(t *testing.T) {
 	expected := 123.0
 
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		PointerFloat: &expected,
 	})
 
@@ -439,7 +528,7 @@ func TestFieldImpl_PointerFloat32(t *testing.T) {
 		t.Errorf(`TestFieldImpl_PointerFloat32 - expected field "PointerFloat" to be equal %#v but got %#v`, expected, *value)
 	}
 
-	reader = NewReader(testStruct{})
+	reader = NewReader(testStructOne{})
 
 	value = reader.GetField("PointerFloat").PointerFloat32()
 
@@ -451,7 +540,7 @@ func TestFieldImpl_PointerFloat32(t *testing.T) {
 func TestFieldImpl_Float32(t *testing.T) {
 	expected := 123.0
 
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		Float: expected,
 	})
 
@@ -465,7 +554,7 @@ func TestFieldImpl_Float32(t *testing.T) {
 func TestFieldImpl_PointerFloat64(t *testing.T) {
 	expected := 123.0
 
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		PointerFloat: &expected,
 	})
 
@@ -475,7 +564,7 @@ func TestFieldImpl_PointerFloat64(t *testing.T) {
 		t.Errorf(`TestFieldImpl_PointerFloat64 - expected field "PointerFloat" to be equal %#v but got %#v`, expected, *value)
 	}
 
-	reader = NewReader(testStruct{})
+	reader = NewReader(testStructOne{})
 
 	value = reader.GetField("PointerFloat").PointerFloat64()
 
@@ -487,7 +576,7 @@ func TestFieldImpl_PointerFloat64(t *testing.T) {
 func TestFieldImpl_Float64(t *testing.T) {
 	expected := 123.0
 
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		Float: expected,
 	})
 
@@ -501,7 +590,7 @@ func TestFieldImpl_Float64(t *testing.T) {
 func TestFieldImpl_PointerString(t *testing.T) {
 	expected := "something"
 
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		PointerString: &expected,
 	})
 
@@ -511,7 +600,7 @@ func TestFieldImpl_PointerString(t *testing.T) {
 		t.Errorf(`TestFieldImpl_PointerString - expected field "PointerString" to be equal %#v but got %#v`, expected, *value)
 	}
 
-	reader = NewReader(testStruct{})
+	reader = NewReader(testStructOne{})
 
 	value = reader.GetField("PointerString").PointerString()
 
@@ -523,7 +612,7 @@ func TestFieldImpl_PointerString(t *testing.T) {
 func TestFieldImpl_String(t *testing.T) {
 	expected := "something"
 
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		String: expected,
 	})
 
@@ -537,7 +626,7 @@ func TestFieldImpl_String(t *testing.T) {
 func TestFieldImpl_PointerBool(t *testing.T) {
 	expected := true
 
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		PointerBool: &expected,
 	})
 
@@ -547,7 +636,7 @@ func TestFieldImpl_PointerBool(t *testing.T) {
 		t.Errorf(`TestFieldImpl_PointerBool - expected field "PointerBool" to be equal %#v but got %#v`, expected, *value)
 	}
 
-	reader = NewReader(testStruct{})
+	reader = NewReader(testStructOne{})
 
 	value = reader.GetField("PointerBool").PointerBool()
 
@@ -559,7 +648,7 @@ func TestFieldImpl_PointerBool(t *testing.T) {
 func TestFieldImpl_Bool(t *testing.T) {
 	expected := true
 
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		Bool: expected,
 	})
 
@@ -573,7 +662,7 @@ func TestFieldImpl_Bool(t *testing.T) {
 func TestFieldImpl_PointerTime(t *testing.T) {
 	expected := time.Now()
 
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		PointerTime: &expected,
 	})
 
@@ -583,7 +672,7 @@ func TestFieldImpl_PointerTime(t *testing.T) {
 		t.Errorf(`TestFieldImpl_PointerTime - expected field "PointerTime" to be equal %#v but got %#v`, expected, *value)
 	}
 
-	reader = NewReader(testStruct{})
+	reader = NewReader(testStructOne{})
 
 	value = reader.GetField("PointerTime").PointerTime()
 
@@ -595,7 +684,7 @@ func TestFieldImpl_PointerTime(t *testing.T) {
 func TestFieldImpl_Time(t *testing.T) {
 	expected := time.Now()
 
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		Time: expected,
 	})
 
@@ -616,7 +705,7 @@ func TestFieldImpl_Time(t *testing.T) {
 func TestFieldImpl_Interface(t *testing.T) {
 	expected := []int{1, 2, 3}
 
-	reader := NewReader(testStruct{
+	reader := NewReader(testStructOne{
 		Integers: expected,
 	})
 
