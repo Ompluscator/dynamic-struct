@@ -12,6 +12,7 @@ Main features:
 * Modifying fields' types and tags
 * Easy reading of dynamic structs
 * Mapping dynamic struct with set values to existing struct
+* Make slices and maps of dynamic structs
 
 Works out-of-the-box with:
 * https://github.com/go-playground/form
@@ -270,4 +271,146 @@ func main() {
 	// <nil> {123 example 123.45}
 	// <nil> {true [1 2 3] }
 }
+```
+
+## Make a slice of dynamic struct
+
+```go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"log"
+
+	"github.com/ompluscator/dynamic-struct"
+)
+
+type Data struct {
+	Integer   int     `json:"int"`
+	Text      string  `json:"someText"`
+	Float     float64 `json:"double"`
+	Boolean   bool
+	Slice     []int
+	Anonymous string `json:"-"`
+}
+
+func main() {
+	definition := dynamicstruct.ExtendStruct(Data{}).Build()
+
+	slice := definition.NewSliceOfStructs()
+
+	data := []byte(`
+[
+	{
+		"int": 123,
+		"someText": "example",
+		"double": 123.45,
+		"Boolean": true,
+		"Slice": [1, 2, 3],
+		"Anonymous": "avoid to read"
+	}
+]
+`)
+
+	err := json.Unmarshal(data, &slice)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	data, err = json.Marshal(slice)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(string(data))
+	// Out:
+	// [{"Boolean":true,"Slice":[1,2,3],"int":123,"someText":"example","double":123.45}]
+
+	reader := dynamicstruct.NewReader(slice)
+	readersSlice := reader.ToSliceOfReaders()
+	for k, v := range readersSlice {
+		var value Data
+		err := v.ToStruct(&value)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Println(k, value)
+	}
+	// Out:
+	// 0 {123 example 123.45 true [1 2 3] }
+}
+
+```
+
+## Make a map of dynamic struct
+
+```go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"log"
+
+	"github.com/ompluscator/dynamic-struct"
+)
+
+type Data struct {
+	Integer   int     `json:"int"`
+	Text      string  `json:"someText"`
+	Float     float64 `json:"double"`
+	Boolean   bool
+	Slice     []int
+	Anonymous string `json:"-"`
+}
+
+func main() {
+	definition := dynamicstruct.ExtendStruct(Data{}).Build()
+
+	mapWithStringKey := definition.NewMapOfStructs("")
+
+	data := []byte(`
+{
+	"element": {
+		"int": 123,
+		"someText": "example",
+		"double": 123.45,
+		"Boolean": true,
+		"Slice": [1, 2, 3],
+		"Anonymous": "avoid to read"
+	}
+}
+`)
+
+	err := json.Unmarshal(data, &mapWithStringKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	data, err = json.Marshal(mapWithStringKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(string(data))
+	// Out:
+	// {"element":{"int":123,"someText":"example","double":123.45,"Boolean":true,"Slice":[1,2,3]}}
+
+	reader := dynamicstruct.NewReader(mapWithStringKey)
+	readersMap := reader.ToMapReaderOfReaders()
+	for k, v := range readersMap {
+		var value Data
+		err := v.ToStruct(&value)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Println(k, value)
+	}
+	// Out:
+	// element {123 example 123.45 true [1 2 3] }
+}
+
 ```

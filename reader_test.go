@@ -147,6 +147,106 @@ func TestReadImpl_ToStruct(t *testing.T) {
 	}
 }
 
+func TestReadImpl_ToSliceOfReaders(t *testing.T) {
+	integer := 123
+	uinteger := uint(456)
+	str := "text"
+	float := 123.45
+	boolean := true
+	now := time.Now()
+
+	value := []testStructOne{
+		{
+			String:          str,
+			Integer:         integer,
+			Uinteger:        uinteger,
+			Float:           float,
+			Bool:            boolean,
+			Time:            now,
+			PointerString:   &str,
+			PointerInteger:  &integer,
+			PointerUinteger: &uinteger,
+			PointerFloat:    &float,
+			PointerBool:     &boolean,
+			PointerTime:     &now,
+			Integers:        []int{1, 2, 3},
+		},
+	}
+
+	reader := NewReader(value)
+
+	result := reader.ToSliceOfReaders()
+
+	if result == nil {
+		t.Errorf(`TestReadImpl_ToSliceOfReaders - expected to have slice []Reader got %#v`, result)
+	}
+
+	if len(result) != 1 {
+		t.Errorf(`TestReadImpl_ToSliceOfReaders - expected to have one element in slice []Reader got %#v`, len(result))
+	}
+
+	var parsed testStructOne
+	err := result[0].ToStruct(&parsed)
+
+	if err != nil {
+		t.Errorf(`TestReadImpl_ToSliceOfReaders - expected not to have error got %#v`, err)
+	}
+
+	if !reflect.DeepEqual(value[0], parsed) {
+		t.Errorf(`TestReadImpl_ToSliceOfReaders - expected slice of structs to be equal %#v but got %#v`, value[0], parsed)
+	}
+}
+
+func TestReadImpl_ToMapReaderOfReaders(t *testing.T) {
+	integer := 123
+	uinteger := uint(456)
+	str := "text"
+	float := 123.45
+	boolean := true
+	now := time.Now()
+
+	value := map[string]testStructOne{
+		"element": {
+			String:          str,
+			Integer:         integer,
+			Uinteger:        uinteger,
+			Float:           float,
+			Bool:            boolean,
+			Time:            now,
+			PointerString:   &str,
+			PointerInteger:  &integer,
+			PointerUinteger: &uinteger,
+			PointerFloat:    &float,
+			PointerBool:     &boolean,
+			PointerTime:     &now,
+			Integers:        []int{1, 2, 3},
+		},
+	}
+
+	reader := NewReader(value)
+
+	result := reader.ToMapReaderOfReaders()
+
+	if result == nil {
+		t.Errorf(`TestReadImpl_ToMapReaderOfReaders - expected to have slice []Reader got %#v`, result)
+	}
+
+	if len(result) != 1 {
+		t.Errorf(`TestReadImpl_ToMapReaderOfReaders - expected to have one element in slice []Reader got %#v`, len(result))
+	}
+
+	var parsed testStructOne
+	err := result["element"].ToStruct(&parsed)
+
+	if err != nil {
+		t.Errorf(`TestReadImpl_ToMapReaderOfReaders - expected not to have error got %#v`, err)
+	}
+
+	if !reflect.DeepEqual(value["element"], parsed) {
+		t.Errorf(`TestReadImpl_ToMapReaderOfReaders - expected slice of structs to be equal %#v but got %#v`, value["element"], parsed)
+	}
+}
+
 func TestFieldImpl_Name(t *testing.T) {
 	reader := NewReader(testStructOne{})
 

@@ -35,6 +35,23 @@ type (
 		// err := reader.ToStruct(&instance)
 		//
 		ToStruct(value interface{}) error
+		// ToSliceOfReaders returns a list of Reader interfaces if value is representation
+		// of slice itself.
+		//
+		// readers := reader.ToReaderSlice()
+		//
+		ToSliceOfReaders() []Reader
+		// ToMapReaderOfReaders returns a map of Reader interfaces if value is representation
+		// of map itself with some key type.
+		//
+		// readers := reader.ToReaderMap()
+		//
+		ToMapReaderOfReaders() map[interface{}]Reader
+		// GetValue returns original value used in reader.
+		//
+		// instance := reader.GetValue()
+		//
+		GetValue() interface{}
 	}
 
 	// Field is a wrapper for struct's field's value.
@@ -235,6 +252,7 @@ type (
 
 	readImpl struct {
 		fields map[string]fieldImpl
+		value  interface{}
 	}
 
 	fieldImpl struct {
@@ -251,16 +269,19 @@ func NewReader(value interface{}) Reader {
 	valueOf := reflect.Indirect(reflect.ValueOf(value))
 	typeOf := valueOf.Type()
 
-	for i := 0; i < valueOf.NumField(); i++ {
-		field := typeOf.Field(i)
-		fields[field.Name] = fieldImpl{
-			field: field,
-			value: valueOf.Field(i),
+	if typeOf.Kind() == reflect.Struct {
+		for i := 0; i < valueOf.NumField(); i++ {
+			field := typeOf.Field(i)
+			fields[field.Name] = fieldImpl{
+				field: field,
+				value: valueOf.Field(i),
+			}
 		}
 	}
 
 	return readImpl{
 		fields: fields,
+		value:  value,
 	}
 }
 
@@ -315,6 +336,44 @@ func (r readImpl) ToStruct(value interface{}) error {
 	}
 
 	return nil
+}
+
+func (r readImpl) ToSliceOfReaders() []Reader {
+	valueOf := reflect.Indirect(reflect.ValueOf(r.value))
+	typeOf := valueOf.Type()
+
+	if typeOf.Kind() != reflect.Slice && typeOf.Kind() != reflect.Array {
+		return nil
+	}
+
+	var readers []Reader
+
+	for i := 0; i < valueOf.Len(); i++ {
+		readers = append(readers, NewReader(valueOf.Index(i).Interface()))
+	}
+
+	return readers
+}
+
+func (r readImpl) ToMapReaderOfReaders() map[interface{}]Reader {
+	valueOf := reflect.Indirect(reflect.ValueOf(r.value))
+	typeOf := valueOf.Type()
+
+	if typeOf.Kind() != reflect.Map {
+		return nil
+	}
+
+	readers := map[interface{}]Reader{}
+
+	for _, keyValue := range valueOf.MapKeys() {
+		readers[keyValue.Interface()] = NewReader(valueOf.MapIndex(keyValue).Interface())
+	}
+
+	return readers
+}
+
+func (r readImpl) GetValue() interface{} {
+	return r.value
 }
 
 func (r readImpl) haveSameTypes(first reflect.Type, second reflect.Type) bool {

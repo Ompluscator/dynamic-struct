@@ -68,6 +68,18 @@ type (
 		// value := dStruct.New()
 		//
 		New() interface{}
+
+		// NewSliceOfStructs provides new slice of defined dynamic struct, with 0 length and capacity.
+		//
+		// value := dStruct.NewSliceOfStructs()
+		//
+		NewSliceOfStructs() interface{}
+
+		// New provides new map of defined dynamic struct with desired key type.
+		//
+		// value := dStruct.NewMapOfStructs("")
+		//
+		NewMapOfStructs(key interface{}) interface{}
 	}
 
 	builderImpl struct {
@@ -181,4 +193,12 @@ func (f *fieldConfigImpl) SetTag(tag string) FieldConfig {
 
 func (ds *dynamicStructImpl) New() interface{}  {
 	return reflect.New(ds.definition).Interface()
+}
+
+func (ds *dynamicStructImpl) NewSliceOfStructs() interface{}  {
+	return reflect.New(reflect.SliceOf(ds.definition)).Interface()
+}
+
+func (ds *dynamicStructImpl) NewMapOfStructs(key interface{}) interface{}  {
+	return reflect.New(reflect.MapOf(reflect.Indirect(reflect.ValueOf(key)).Type(), ds.definition)).Interface()
 }
