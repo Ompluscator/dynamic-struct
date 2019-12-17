@@ -56,7 +56,7 @@ func TestReaderImpl_GetAllFields(t *testing.T) {
 	reader := NewReader(testStructOne{})
 
 	if len(reader.GetAllFields()) != 13 {
-		t.Errorf(`TestReaderImpl_GetAllFields - expected to have 10 fields but got %d`, len(reader.GetAllFields()))
+		t.Errorf(`TestReaderImpl_GetAllFields - expected to have 13 fields but got %d`, len(reader.GetAllFields()))
 	}
 }
 
