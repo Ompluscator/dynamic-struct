@@ -149,7 +149,7 @@ func MergeStructs(values ...interface{}) Builder {
 // it will build only with exported and addressable fields,
 // therefore it will not panic, even there are unexported or unaddressable fields in the struct,
 // input value must be a pointer to struct, otherwise, it returns error
-// only exported and addressable field will be extended
+// only exported and addressable fields will be extended
 func ExtendStructWithSettableFields(value interface{}) (Builder, error) {
 	return MergeStructsWithSettableFields(value)
 }
@@ -162,7 +162,7 @@ func ExtendStructWithSettableFields(value interface{}) (Builder, error) {
 // it will build only with exported and addressable fields,
 // therefore it will not panic, even there are unexported or unaddressable fields in the struct,
 // each value in values must be a pointer to struct, otherwise, it returns error
-// only exported and addressable field will be merged
+// only exported and addressable fields will be merged
 func MergeStructsWithSettableFields(values ...interface{}) (Builder, error) {
 	builder := NewStruct()
 
