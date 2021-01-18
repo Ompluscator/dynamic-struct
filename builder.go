@@ -141,27 +141,27 @@ func MergeStructs(values ...interface{}) Builder {
 	return builder
 }
 
-// ExtendStructWithAddressableFields extends existing instance of struct and
+// ExtendStructWithSettableFields extends existing instance of struct and
 // returns new instance of Builder interface.
 //
-// builder := dynamicstruct.ExtendStructWithAddressableFields(MyStruct{})
+// builder := dynamicstruct.ExtendStructWithSettableFields(MyStruct{})
 //
-// it will build only with exported field, therefore it will not panic,
-// even there are unexported fields in the struct,
+// it will build only with exported and addressable fields,
+// therefore it will not panic, even there are unexported or unaddressable fields in the struct,
 // input value must be a pointer to struct, otherwise, it returns error
-func ExtendStructWithAddressableFields(value interface{}) (Builder, error) {
-	return MergeStructsWithAddressableFields(value)
+func ExtendStructWithSettableFields(value interface{}) (Builder, error) {
+	return MergeStructsWithSettableFields(value)
 }
 
-// MergeStructsWithAddressableFields merges a list of existing instances of structs and
+// MergeStructsWithSettableFields merges a list of existing instances of structs and
 // returns new instance of Builder interface.
 //
-// builder := dynamicstruct.MergeStructsWithAddressableFields(MyStructOne{}, MyStructTwo{}, MyStructThree{})
+// builder := dynamicstruct.MergeStructsWithSettableFields(MyStructOne{}, MyStructTwo{}, MyStructThree{})
 //
-// it will build only with addressable field, therefore it will not panic,
-// even there are unaddressable fields in the struct,
+// it will build only with exported and addressable fields,
+// therefore it will not panic, even there are unexported or unaddressable fields in the struct,
 // each value in values must be a pointer to struct, otherwise, it returns error
-func MergeStructsWithAddressableFields(values ...interface{}) (Builder, error) {
+func MergeStructsWithSettableFields(values ...interface{}) (Builder, error) {
 	builder := NewStruct()
 
 	for _, value := range values {
