@@ -181,7 +181,6 @@ func MergeStructsWithSettableFields(values ...interface{}) (Builder, error) {
 				builder.AddField(ftyp.Name, fval.Interface(), string(ftyp.Tag))
 			}
 		}
-
 	}
 
 	return builder, nil
