@@ -5,8 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ompluscator/dynamic-struct"
 	"gopkg.in/go-playground/validator.v9"
+
+	"github.com/ompluscator/dynamic-struct"
 )
 
 func TestExample(t *testing.T) {
