@@ -40,14 +40,15 @@ func TestExtendStruct(t *testing.T) {
 		t.Errorf(`TestExtendStruct - expected length of fields map to be 1 got %d`, len(builder.fields))
 	}
 
-	field, ok := builder.fields["Field"]
-	if !ok {
+	field := builder.GetField("Field")
+	if field == nil {
 		t.Error(`TestExtendStruct - expected to have field "Field"`)
 	}
 
 	expected := &fieldConfigImpl{
-		typ: 0,
-		tag: `key:"value"`,
+		name: "Field",
+		typ:  0,
+		tag:  `key:"value"`,
 	}
 
 	if !reflect.DeepEqual(field, expected) {
@@ -78,28 +79,30 @@ func TestMergeStructs(t *testing.T) {
 		t.Errorf(`TestMergeStructs - expected length of fields map to be 1 got %d`, len(builder.fields))
 	}
 
-	fieldOne, ok := builder.fields["FieldOne"]
-	if !ok {
+	fieldOne := builder.GetField("FieldOne")
+	if fieldOne == nil {
 		t.Error(`TestMergeStructs - expected to have field "FieldOne"`)
 	}
 
 	expectedOne := &fieldConfigImpl{
-		typ: 0,
-		tag: `keyOne:"valueOne"`,
+		name: "FieldOne",
+		typ:  0,
+		tag:  `keyOne:"valueOne"`,
 	}
 
 	if !reflect.DeepEqual(fieldOne, expectedOne) {
 		t.Errorf(`TestMergeStructs - expected field "FieldOne" to be %#v got %#v`, expectedOne, fieldOne)
 	}
 
-	fieldTwo, ok := builder.fields["FieldTwo"]
-	if !ok {
+	fieldTwo := builder.GetField("FieldTwo")
+	if fieldTwo == nil {
 		t.Error(`TestMergeStructs - expected to have field "FieldTwo"`)
 	}
 
 	expectedTwo := &fieldConfigImpl{
-		typ: "",
-		tag: `keyTwo:"valueTwo"`,
+		name: "FieldTwo",
+		typ:  "",
+		tag:  `keyTwo:"valueTwo"`,
 	}
 
 	if !reflect.DeepEqual(fieldTwo, expectedTwo) {
@@ -109,19 +112,20 @@ func TestMergeStructs(t *testing.T) {
 
 func TestBuilderImpl_AddField(t *testing.T) {
 	builder := &builderImpl{
-		fields: map[string]*fieldConfigImpl{},
+		fields: []*fieldConfigImpl{},
 	}
 
 	builder.AddField("Field", 1, `key:"value"`)
 
-	field, ok := builder.fields["Field"]
-	if !ok {
+	field := builder.GetField("Field")
+	if field == nil {
 		t.Error(`TestBuilder_AddField - expected to have field "Field"`)
 	}
 
 	expected := &fieldConfigImpl{
-		typ: 1,
-		tag: `key:"value"`,
+		name: "Field",
+		typ:  1,
+		tag:  `key:"value"`,
 	}
 
 	if !reflect.DeepEqual(field, expected) {
@@ -131,50 +135,53 @@ func TestBuilderImpl_AddField(t *testing.T) {
 
 func TestBuilderImpl_RemoveField(t *testing.T) {
 	builder := &builderImpl{
-		fields: map[string]*fieldConfigImpl{
-			"Field": {
-				tag: `key:"value"`,
-				typ: 1,
+		fields: []*fieldConfigImpl{
+			{
+				name: "Field",
+				tag:  `key:"value"`,
+				typ:  1,
 			},
 		},
 	}
 
 	builder.RemoveField("Field")
 
-	if _, ok := builder.fields["Field"]; ok {
+	if ok := builder.HasField("Field"); ok {
 		t.Error(`TestBuilder_RemoveField - expected not to have field "Field"`)
 	}
 }
 
 func TestBuilderImpl_HasField(t *testing.T) {
 	builder := &builderImpl{
-		fields: map[string]*fieldConfigImpl{},
+		fields: []*fieldConfigImpl{},
 	}
 
-	if builder.HasField("Field") {
+	if ok := builder.HasField("Field"); ok {
 		t.Error(`TestBuilder_HasField - expected not to have field "Field"`)
 	}
 
 	builder = &builderImpl{
-		fields: map[string]*fieldConfigImpl{
-			"Field": {
-				tag: `key:"value"`,
-				typ: 1,
+		fields: []*fieldConfigImpl{
+			{
+				name: "Field",
+				tag:  `key:"value"`,
+				typ:  1,
 			},
 		},
 	}
 
-	if !builder.HasField("Field") {
+	if ok := builder.HasField("Field"); !ok {
 		t.Error(`TestBuilder_HasField - expected to have field "Field"`)
 	}
 }
 
 func TestBuilderImpl_GetField(t *testing.T) {
 	builder := &builderImpl{
-		fields: map[string]*fieldConfigImpl{
-			"Field": {
-				tag: `key:"value"`,
-				typ: 1,
+		fields: []*fieldConfigImpl{
+			{
+				name: "Field",
+				tag:  `key:"value"`,
+				typ:  1,
 			},
 		},
 	}
@@ -187,8 +194,9 @@ func TestBuilderImpl_GetField(t *testing.T) {
 	}
 
 	expected := &fieldConfigImpl{
-		typ: 1,
-		tag: `key:"value"`,
+		name: "Field",
+		typ:  1,
+		tag:  `key:"value"`,
 	}
 
 	if !reflect.DeepEqual(field, expected) {

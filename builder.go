@@ -83,12 +83,13 @@ type (
 	}
 
 	builderImpl struct {
-		fields map[string]*fieldConfigImpl
+		fields []*fieldConfigImpl
 	}
 
 	fieldConfigImpl struct {
-		typ interface{}
-		tag string
+		name string
+		typ  interface{}
+		tag  string
 	}
 
 	dynamicStructImpl struct {
@@ -103,7 +104,7 @@ type (
 //
 func NewStruct() Builder {
 	return &builderImpl{
-		fields: map[string]*fieldConfigImpl{},
+		fields: []*fieldConfigImpl{},
 	}
 }
 
@@ -139,38 +140,49 @@ func MergeStructs(values ...interface{}) Builder {
 }
 
 func (b *builderImpl) AddField(name string, typ interface{}, tag string) Builder {
-	b.fields[name] = &fieldConfigImpl{
-		typ: typ,
-		tag: tag,
-	}
+	b.fields = append(b.fields, &fieldConfigImpl{
+		name: name,
+		typ:  typ,
+		tag:  tag,
+	})
 
 	return b
 }
 
 func (b *builderImpl) RemoveField(name string) Builder {
-	delete(b.fields, name)
-
+	for i := range b.fields {
+		if b.fields[i].name == name {
+			b.fields = append(b.fields[:i], b.fields[i+1:]...)
+			break
+		}
+	}
 	return b
 }
 
 func (b *builderImpl) HasField(name string) bool {
-	_, ok := b.fields[name]
-	return ok
+	for i := range b.fields {
+		if b.fields[i].name == name {
+			return true
+		}
+	}
+	return false
 }
 
 func (b *builderImpl) GetField(name string) FieldConfig {
-	if !b.HasField(name) {
-		return nil
+	for i := range b.fields {
+		if b.fields[i].name == name {
+			return b.fields[i]
+		}
 	}
-	return b.fields[name]
+	return nil
 }
 
 func (b *builderImpl) Build() DynamicStruct {
 	var structFields []reflect.StructField
 
-	for name, field := range b.fields {
+	for _, field := range b.fields {
 		structFields = append(structFields, reflect.StructField{
-			Name: name,
+			Name: field.name,
 			Type: reflect.TypeOf(field.typ),
 			Tag:  reflect.StructTag(field.tag),
 		})
@@ -191,14 +203,14 @@ func (f *fieldConfigImpl) SetTag(tag string) FieldConfig {
 	return f
 }
 
-func (ds *dynamicStructImpl) New() interface{}  {
+func (ds *dynamicStructImpl) New() interface{} {
 	return reflect.New(ds.definition).Interface()
 }
 
-func (ds *dynamicStructImpl) NewSliceOfStructs() interface{}  {
+func (ds *dynamicStructImpl) NewSliceOfStructs() interface{} {
 	return reflect.New(reflect.SliceOf(ds.definition)).Interface()
 }
 
-func (ds *dynamicStructImpl) NewMapOfStructs(key interface{}) interface{}  {
+func (ds *dynamicStructImpl) NewMapOfStructs(key interface{}) interface{} {
 	return reflect.New(reflect.MapOf(reflect.Indirect(reflect.ValueOf(key)).Type(), ds.definition)).Interface()
 }
