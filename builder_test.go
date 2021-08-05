@@ -23,10 +23,15 @@ func TestNewStruct(t *testing.T) {
 }
 
 func TestExtendStruct(t *testing.T) {
-	value := ExtendStruct(struct {
+	type B struct {
+		Embedded string `key:"embedded"`
+	}
+	type A struct {
+		B
 		Field int `key:"value"`
-	}{})
+	}
 
+	value := ExtendStruct(A{})
 	builder, ok := value.(*builderImpl)
 	if !ok {
 		t.Errorf(`TestExtendStruct - expected instance of *builder got %#v`, value)
@@ -36,21 +41,34 @@ func TestExtendStruct(t *testing.T) {
 		t.Error(`TestExtendStruct - expected instance of *map[string]*fieldConfig got nil`)
 	}
 
-	if len(builder.fields) != 1 {
-		t.Errorf(`TestExtendStruct - expected length of fields map to be 1 got %d`, len(builder.fields))
+	if len(builder.fields) != 2 {
+		t.Errorf(`TestExtendStruct - expected length of fields to be 2 got %d`, len(builder.fields))
 	}
 
 	field := builder.GetField("Field")
 	if field == nil {
 		t.Error(`TestExtendStruct - expected to have field "Field"`)
 	}
-
 	expected := &fieldConfigImpl{
 		name: "Field",
 		typ:  0,
 		tag:  `key:"value"`,
 	}
+	if !reflect.DeepEqual(field, expected) {
+		t.Errorf(`TestExtendStruct - expected field to be %#v got %#v`, expected, field)
+	}
 
+	field = builder.GetField("B")
+	if field == nil {
+		t.Error(`TestExtendStruct - expected to have field "B"`)
+	}
+	expected = &fieldConfigImpl{
+		name:      "B",
+		pkg:       "",
+		typ:       reflect.Indirect(reflect.ValueOf(A{})).Field(0).Interface(),
+		tag:       "",
+		anonymous: true,
+	}
 	if !reflect.DeepEqual(field, expected) {
 		t.Errorf(`TestExtendStruct - expected field to be %#v got %#v`, expected, field)
 	}
