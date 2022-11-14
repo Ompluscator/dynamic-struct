@@ -1,3 +1,7 @@
+[![Go Reference](https://pkg.go.dev/badge/github.com/Ompluscator/dynamic-struct.svg)](https://pkg.go.dev/github.com/Ompluscator/dynamic-struct)
+![Coverage](https://img.shields.io/badge/Coverage-92.6%25-brightgreen)
+[![Go Report Card](https://goreportcard.com/badge/github.com/ompluscator/dynamic-struct)](https://goreportcard.com/report/github.com/ompluscator/dynamic-struct)
+
 # Golang dynamic struct
 
 Package dynamic struct provides possibility to dynamically, in runtime,
