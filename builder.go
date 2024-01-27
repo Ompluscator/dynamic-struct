@@ -69,6 +69,13 @@ type (
 		//
 		New() interface{}
 
+		// New provides new instance of defined dynamic struct, and assigns to
+		// its fields the values `fieldValues` in field order.
+		//
+		// value := dStruct.NewWithValues("hello", 123)
+		//
+		NewWithValues(fieldValues ...interface{}) interface{}
+
 		// NewSliceOfStructs provides new slice of defined dynamic struct, with 0 length and capacity.
 		//
 		// value := dStruct.NewSliceOfStructs()
@@ -103,7 +110,6 @@ type (
 // for defining fresh dynamic struct.
 //
 // builder := dynamicstruct.NewStruct()
-//
 func NewStruct() Builder {
 	return &builderImpl{
 		fields: []*fieldConfigImpl{},
@@ -114,7 +120,6 @@ func NewStruct() Builder {
 // returns new instance of Builder interface.
 //
 // builder := dynamicstruct.MergeStructs(MyStruct{})
-//
 func ExtendStruct(value interface{}) Builder {
 	return MergeStructs(value)
 }
@@ -123,7 +128,6 @@ func ExtendStruct(value interface{}) Builder {
 // returns new instance of Builder interface.
 //
 // builder := dynamicstruct.MergeStructs(MyStructOne{}, MyStructTwo{}, MyStructThree{})
-//
 func MergeStructs(values ...interface{}) Builder {
 	builder := NewStruct()
 
@@ -142,6 +146,10 @@ func MergeStructs(values ...interface{}) Builder {
 }
 
 func (b *builderImpl) AddField(name string, typ interface{}, tag string) Builder {
+	if name == "" {
+		typ_ := reflect.TypeOf(typ)
+		return b.addField(typ_.Name(), typ_.PkgPath(), typ, tag, true)
+	}
 	return b.addField(name, "", typ, tag, false)
 }
 
@@ -214,6 +222,14 @@ func (f *fieldConfigImpl) SetTag(tag string) FieldConfig {
 
 func (ds *dynamicStructImpl) New() interface{} {
 	return reflect.New(ds.definition).Interface()
+}
+
+func (ds *dynamicStructImpl) NewWithValues(fieldValues ...interface{}) interface{} {
+	n := reflect.Zero(ds.definition)
+	for i, v := range fieldValues {
+		n.Field(i).Set(reflect.ValueOf(v))
+	}
+	return n.Interface()
 }
 
 func (ds *dynamicStructImpl) NewSliceOfStructs() interface{} {
